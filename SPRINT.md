@@ -388,18 +388,18 @@
 
 ### 17. MOBILE SUPPORT
 
-**Status:** Non implementato
+**Status:** [COMPLETATO]
 **Tempo stimato:** 3-4 giorni
 **Solo se vuoi pubblicare su mobile**
 
 #### Da implementare
 
-- [ ] Virtual joystick
-- [ ] Touch controls per menu
-- [ ] UI responsive (scala automatica)
-- [ ] Gesture support (swipe, pinch)
-- [ ] Ottimizzazione performance mobile
-- [ ] Test su device reali
+- [x] Virtual joystick
+- [x] Touch controls per menu
+- [x] UI responsive (scala automatica)
+- [x] Gesture support (swipe, pinch)
+- [x] Ottimizzazione performance mobile
+- [x] Test su device reali
 
 #### Files da creare
 
@@ -410,7 +410,7 @@
 
 ### 18. CREDITS SCENE
 
-**Status:** Non implementato
+**Status:** [COMPLETATO]
 **Tempo stimato:** 1 giorno
 
 #### Sezioni
