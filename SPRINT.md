@@ -456,7 +456,7 @@
 
 #### File
 
-- `GAME_DESIGN.md`
+- `DESIGN.md`
 
 ---
 
