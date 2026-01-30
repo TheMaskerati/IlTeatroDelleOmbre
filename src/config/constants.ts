@@ -50,7 +50,7 @@ export const DIALOGS: Record<string, Dialog> = {
             { speaker: 'GENNARO', text: '...' },
             { speaker: 'DARIO', text: 'Lascia che ti insegni il tuo posto!' },
         ],
-        onComplete: 'battle_dario', // TODO: Remove or ignore in Endless
+        onComplete: 'battle_dario',
     },
 
     dario_defeated: {

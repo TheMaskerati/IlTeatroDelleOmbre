@@ -73,44 +73,35 @@ export class MinigameManager {
         }).setOrigin(0.5);
         this.container.add(this.instructionText);
 
-        // UI Components (Hidden by default)
+        this.container.add(this.instructionText);
 
-        // QTE
-        // Reuse instruction text for count
-
-        // Balance
         this.balanceZone = this.scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 50, 400, 30, 0x555555);
         this.balanceCursor = this.scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 50, 20, 40, 0x00ff00);
         this.container.add([this.balanceZone, this.balanceCursor]);
 
-        // Rhythm
         this.rhythmTarget = this.scene.add.circle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 50);
         this.rhythmTarget.setStrokeStyle(4, 0xff0000);
         this.rhythmBeat = this.scene.add.circle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 10, 0xff0000);
         this.container.add([this.rhythmTarget, this.rhythmBeat]);
 
-        // Hold
         this.holdBarBg = this.scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 40, 300, 0x333333);
         this.holdBarBg.setStrokeStyle(2, 0xffffff);
         this.holdBarFill = this.scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 150, 36, 0, 0xff0000);
         this.holdBarFill.setOrigin(0.5, 1);
         this.container.add([this.holdBarBg, this.holdBarFill]);
 
-        // Breath
         this.breathCircleOuter = this.scene.add.circle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 100, 0x0055ff, 0.3);
         this.breathCircleInner = this.scene.add.circle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 10, 0xaaddff);
         this.container.add([this.breathCircleOuter, this.breathCircleInner]);
 
-        // Focus
         this.focusTarget = this.scene.add.star(GAME_WIDTH / 2, GAME_HEIGHT / 2, 5, 10, 20, 0xffff00);
-        this.focusCrosshair = this.scene.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'crosshair'); // Placeholder, use graphic if needed
-        // Simulating crosshair with graphics
+        this.focusCrosshair = this.scene.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'crosshair');
+
         const crosshair = this.scene.add.graphics();
         crosshair.lineStyle(2, 0x00ff00);
         crosshair.strokeRect(-20, -20, 40, 40);
         crosshair.lineBetween(0, -10, 0, 10);
         crosshair.lineBetween(-10, 0, 10, 0);
-        // We can't easily add graphics to container as sprite, so well keep it simple or use a rect
         this.container.add([this.focusTarget]);
     }
 
@@ -145,7 +136,7 @@ export class MinigameManager {
         this.focusTarget.setVisible(false);
     }
 
-    // --- SETUP METHODS ---
+    // SETUP METHODS
 
     private setupQTE(difficulty: number): void {
         this.qteCount = 0;
