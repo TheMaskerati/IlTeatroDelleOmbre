@@ -19,7 +19,7 @@ export class Player {
         this.scene = scene;
         this.speed = PLAYER_CONFIG.speed;
 
-        this.sprite = scene.physics.add.sprite(x, y, 'player');
+        this.sprite = scene.physics.add.sprite(x, y, 'player', 0);
         this.sprite.setScale(SCALE);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setDepth(10);
@@ -29,6 +29,7 @@ export class Player {
         body.setOffset(2, 16);
 
         this.createShadow();
+        this.sprite.play('player_idle_down');
     }
 
     private createShadow(): void {
@@ -66,24 +67,13 @@ export class Player {
         else if (input.y > 0) this.direction = 'down';
 
         if (this.isMoving) {
-            this.animationTimer += delta;
-            if (this.animationTimer > 150) {
-                this.walkFrame = (this.walkFrame + 1) % 4;
-                this.animationTimer = 0;
-                this.updateVisualWalk();
+            const animKey = `player_walk_${this.direction}`;
+            if (this.sprite.anims.currentAnim?.key !== animKey) {
+                this.sprite.play(animKey);
             }
         } else {
-            this.walkFrame = 0;
-            this.sprite.setTint(0xffffff);
+            this.sprite.play(`player_idle_${this.direction}`, true);
         }
-    }
-
-    private updateVisualWalk(): void {
-        const tints = [0xffffff, 0xeeeeee, 0xffffff, 0xdddddd];
-        this.sprite.setTint(tints[this.walkFrame]);
-
-        const bobOffset = this.walkFrame % 2 === 0 ? 0 : -2;
-        this.sprite.y += bobOffset;
     }
 
     getSprite(): Phaser.Physics.Arcade.Sprite {
