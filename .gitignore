@@ -119,3 +119,9 @@ dist
 release/
 electron/assets/
 public/icon.png
+
+# Binaries
+*.exe
+*.zip
+*.dmg
+*.app

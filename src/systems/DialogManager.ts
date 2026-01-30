@@ -3,6 +3,10 @@ import { COLORS, GAME_WIDTH, GAME_HEIGHT } from '@/config/gameConfig';
 import { Dialog, DialogLine, DialogChoice } from '@/types/dialog';
 import { DIALOGS } from '@/config/constants';
 
+/**
+ * Manages the dialogue system, including displaying text, character portraits,
+ * and handling user choices.
+ */
 export class DialogManager {
     private scene: Phaser.Scene;
     private container: Phaser.GameObjects.Container;
@@ -20,7 +24,7 @@ export class DialogManager {
     private fullText = '';
     private selectedChoice = 0;
     private typewriterEvent: Phaser.Time.TimerEvent | null = null;
-    private onComplete: (() => void) | null = null;
+    private onComplete: ((action?: string) => void) | null = null;
 
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
@@ -92,7 +96,12 @@ export class DialogManager {
         ]);
     }
 
-    show(dialogId: string, onComplete?: () => void): void {
+    /**
+     * Starts a dialogue sequence.
+     * @param dialogId The ID of the dialogue to show.
+     * @param onComplete Optional callback when dialogue ends, receiving the final action string.
+     */
+    show(dialogId: string, onComplete?: (action?: string) => void): void {
         this.currentDialog = DIALOGS[dialogId];
         if (!this.currentDialog) {
             console.error(`Dialog not found: ${dialogId}`);
@@ -107,6 +116,9 @@ export class DialogManager {
         this.showCurrentLine();
     }
 
+    /**
+     * Hides the dialogue UI and resets state.
+     */
     hide(): void {
         this.container.setVisible(false);
         this.currentDialog = null;
@@ -220,19 +232,25 @@ export class DialogManager {
             return choice;
         }
 
-        this.complete();
+        this.complete(choice.action);
         return choice;
     }
 
-    private complete(): void {
+    private complete(action?: string): void {
+        const finalAction = action || this.currentDialog?.onComplete;
         this.hide();
-        this.onComplete?.();
+        this.onComplete?.(finalAction);
     }
 
+    /**
+     * Handles keyboard input for dialogue progression and choices.
+     * @param keys The active keyboard keys from the scene.
+     * @returns The chosen DialogChoice if a choice was made, otherwise null.
+     */
     handleInput(keys: Record<string, Phaser.Input.Keyboard.Key>): DialogChoice | null {
         if (!this.container.visible) return null;
 
-        // Quando ci sono scelte, solo INVIO può confermare
+        // When choices are present, only ENTER confirms
         if (this.choiceTexts.length > 0) {
             if (Phaser.Input.Keyboard.JustDown(keys.UP) || Phaser.Input.Keyboard.JustDown(keys.W)) {
                 this.selectedChoice = Math.max(0, this.selectedChoice - 1);
@@ -245,14 +263,14 @@ export class DialogManager {
                 );
                 this.updateChoiceSelection();
             }
-            // Solo INVIO conferma la scelta
+            // Only ENTER confirms choice
             if (Phaser.Input.Keyboard.JustDown(keys.ENTER)) {
                 return this.selectChoice();
             }
             return null;
         }
 
-        // Durante i dialoghi, solo SPAZIO avanza/skippa
+        // During standard dialogue, SPACE advances/skips
         if (Phaser.Input.Keyboard.JustDown(keys.SPACE)) {
             if (this.isTyping) {
                 this.typewriterEvent?.destroy();
@@ -269,6 +287,9 @@ export class DialogManager {
         return null;
     }
 
+    /**
+     * Checks if the dialogue UI is currently active.
+     */
     isActive(): boolean {
         return this.container.visible;
     }

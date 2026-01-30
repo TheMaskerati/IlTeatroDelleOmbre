@@ -16,6 +16,11 @@ interface GameSceneData {
     stage?: number; // Nuovo: Traccia il round corrente
 }
 
+/**
+ * Main Game Scene
+ * Handles the core gameplay loop including map loading, player movement,
+ * NPC interactions, and transitioning between maps in Endless Mode.
+ */
 export class GameScene extends BaseScene {
     private player!: Player;
     private npcs: NPC[] = [];
@@ -30,13 +35,17 @@ export class GameScene extends BaseScene {
     private stage: number = 1;
     private static tutorialDone = false;
 
-    // Map Cycle per Endless Mode
-    private readonly MAP_CYCLE: MapKey[] = ['theater', 'bar', 'fatherHouse'];
+    /** Cycle of maps for Endless Mode progression */
+    private readonly MAP_CYCLE: MapKey[] = ['theater', 'naplesAlley', 'fatherHouse'];
 
     constructor() {
         super(SCENES.GAME);
     }
 
+    /**
+     * Initializes the scene with data passed from other scenes.
+     * @param data GameSceneData including current map, player position, and stage number.
+     */
     init(data?: GameSceneData): void {
         super.init();
         this.currentMap = data?.map || 'apartment';
@@ -47,7 +56,6 @@ export class GameScene extends BaseScene {
     create(data?: GameSceneData): void {
         super.create();
 
-        // 1. Setup Map e Player
         this.mapManager = new MapManager(this, this.currentMap);
         const { walls, mapWidth, mapHeight } = this.mapManager.create();
 
@@ -57,7 +65,6 @@ export class GameScene extends BaseScene {
         this.createNPCs();
         this.createUI();
 
-        // 2. Init Nuovi Sistemi
         this.dialogManager = new DialogManager(this);
         this.minigameManager = new MinigameManager(this);
         MaskSystem.getInstance().init(this);
@@ -67,7 +74,6 @@ export class GameScene extends BaseScene {
         this.setupDoorTriggers();
         this.setupCamera(mapWidth, mapHeight);
 
-        // 3. Game Flow Logic
         if (this.currentMap === 'apartment' && !GameScene.tutorialDone) {
             this.startTutorial();
         } else {
@@ -83,15 +89,13 @@ export class GameScene extends BaseScene {
         const defaults: Record<string, { x: number; y: number }> = {
             apartment: { x: 10 * TILE_SIZE * SCALE, y: 10 * TILE_SIZE * SCALE },
             theater: { x: 5 * TILE_SIZE * SCALE, y: 20 * TILE_SIZE * SCALE },
-            bar: { x: 8 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
+            naplesAlley: { x: 8 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
             fatherHouse: { x: 12 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
         };
         return defaults[this.currentMap] || { x: 100, y: 100 };
     }
 
     private createNPCs(): void {
-        // Spawn NPC random per encounter in base alla mappa
-        // In Endless Mode, ogni mappa ha un "Guardian" o NPC casuale
         const npcIds = this.mapManager.getNPCIds();
 
         npcIds.forEach(id => {
@@ -139,7 +143,6 @@ export class GameScene extends BaseScene {
             this.dialogManager.show('intro_apartment', () => {
                 GameScene.tutorialDone = true;
                 MaskSystem.getInstance().updateTask('ESCI DALLO STUDIO');
-                // Tutorial ends, enable interaction with door to start loop
             });
         });
     }
@@ -160,7 +163,6 @@ export class GameScene extends BaseScene {
         // Interactions
         let nearTarget = false;
 
-        // NPC -> Minigame Encounter
         this.npcs.forEach(npc => {
             if (Phaser.Math.Distance.BetweenPoints(this.player.getPosition(), npc.getPosition()) < 50) {
                 nearTarget = true;
@@ -169,7 +171,6 @@ export class GameScene extends BaseScene {
             }
         });
 
-        // Doors -> Next Map
         if (!nearTarget) {
             const doors = this.mapManager.getDoors();
             doors.forEach(door => {
@@ -189,40 +190,37 @@ export class GameScene extends BaseScene {
         this.player.freeze();
         this.interactionPrompt.setVisible(false);
 
-        // 1. Dialogo Pre-Encounter (Placeholder o specifico)
-        const dialogId = npc.getDialogId() || 'generic_intro';
+        this.dialogManager.show(dialogId, (action) => {
+            if (action === 'start_minigame' || action?.includes('battle') || npc.isBoss()) {
+                const difficulty = 1.0 + (this.stage * 0.2);
 
-        this.dialogManager.show(dialogId, () => {
-            // 2. Start Random Minigame
-            // Difficulty increases with Stage
-            const difficulty = 1.0 + (this.stage * 0.2);
+                MaskSystem.getInstance().updateTask(`SCONFIGGI ${npc.getName().toUpperCase()}`);
 
-            MaskSystem.getInstance().updateTask(`SCONFIGGI ${npc.getName().toUpperCase()}`);
-
-            this.minigameManager.startRandom(difficulty, (success) => {
-                // 3. Post Minigame
-                if (success) {
-                    this.dialogManager.show('minigame_win', () => {
-                        this.player.unfreeze();
-                        // NPC Defeated? Disappear?
-                        npc.setDefeated(true);
-                        MaskSystem.getInstance().updateTask('TROVA L\'USCITA');
-                    });
-                } else {
-                    this.dialogManager.show('minigame_loss', () => {
-                        this.player.unfreeze();
-                    });
-                }
-            });
+                this.minigameManager.startRandom(difficulty, (success) => {
+                    if (success) {
+                        this.dialogManager.show('minigame_win', () => {
+                            this.player.unfreeze();
+                            npc.setDefeated(true);
+                            MaskSystem.getInstance().updateTask('TROVA L\'USCITA');
+                        });
+                    } else {
+                        this.dialogManager.show('minigame_loss', () => {
+                            this.player.unfreeze();
+                        });
+                    }
+                });
+            } else {
+                this.player.unfreeze();
+            }
         });
     }
 
+    /**
+     * Handles door interaction and map transitions.
+     * In Endless Mode, this cycles through predefined maps.
+     * @param door The door configuration interacting with.
+     */
     private handleDoor(door: DoorConfig): void {
-        // Logica Endless:
-        // Se siamo in Apartment, andiamo al Theater (avvio loop)
-        // Se siamo nel loop, andiamo alla next map nel ciclo
-
-        // In Endless Mode, ignoriamo il targetMap della porta e usiamo il ciclo
         let nextMap: MapKey = 'theater';
 
         if (this.currentMap === 'apartment') {

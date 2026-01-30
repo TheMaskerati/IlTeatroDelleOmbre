@@ -103,6 +103,10 @@ export const MAP_CONFIGS: Record<MapKey, MapConfig> = {
     },
 };
 
+/**
+ * Manages map creation, including walls, objects, and doors.
+ * Handles the visual representation based on configuration.
+ */
 export class MapManager {
     private scene: Phaser.Scene;
     private currentMap: MapKey;
@@ -115,6 +119,10 @@ export class MapManager {
         this.walls = scene.physics.add.staticGroup();
     }
 
+    /**
+     * Creates the map visuals and physics boundaries.
+     * @returns Object containing the walls static group and map dimensions.
+     */
     create(): { walls: Phaser.Physics.Arcade.StaticGroup; mapWidth: number; mapHeight: number } {
         const config = MAP_CONFIGS[this.currentMap];
         const mapWidth = config.width * TILE_SIZE * SCALE;
@@ -165,20 +173,44 @@ export class MapManager {
     }
 
     private createObjects(objects: MapObject[]): void {
+        const textureMap: Record<string, string> = {
+            'Letto': 'furn_bed',
+            'TV': 'furn_tv',
+            'Tavolo': 'furn_table',
+            'Frigo': 'furn_fridge',
+            'PALCO': 'furn_stage',
+            'Maschera': 'furn_mask',
+            'Edificio': 'furn_building',
+            'Muro': 'furn_wall',
+            'Panchina': 'furn_bench',
+            'Negozio': 'furn_shop',
+            'Divano': 'furn_sofa',
+            'Libreria': 'furn_bookshelf',
+            'Foto': 'furn_photo'
+        };
+
         objects.forEach(obj => {
             const x = obj.x * TILE_SIZE * SCALE + (obj.width * TILE_SIZE * SCALE) / 2;
             const y = obj.y * TILE_SIZE * SCALE + (obj.height * TILE_SIZE * SCALE) / 2;
             const width = obj.width * TILE_SIZE * SCALE;
             const height = obj.height * TILE_SIZE * SCALE;
+            let gameObject: Phaser.GameObjects.GameObject;
 
-            const rect = this.scene.add.rectangle(x, y, width, height, obj.color);
-            rect.setDepth(1);
-
-            if (obj.collision) {
-                this.walls.add(rect);
+            if (obj.label && textureMap[obj.label]) {
+                const sprite = this.scene.add.image(x, y, textureMap[obj.label]);
+                sprite.setDepth(obj.label === 'PALCO' ? 0 : 1); // Stage floor should be lower
+                gameObject = sprite;
+            } else {
+                const rect = this.scene.add.rectangle(x, y, width, height, obj.color);
+                rect.setDepth(1);
+                gameObject = rect;
             }
 
-            if (obj.label) {
+            if (obj.collision) {
+                this.walls.add(gameObject);
+            }
+
+            if (obj.label && !textureMap[obj.label]) {
                 const label = this.scene.add.text(x, y, obj.label, {
                     fontFamily: 'monospace',
                     fontSize: '10px',
@@ -188,7 +220,7 @@ export class MapManager {
                 label.setDepth(2);
             }
 
-            this.objects.push(rect);
+            this.objects.push(gameObject);
         });
     }
 

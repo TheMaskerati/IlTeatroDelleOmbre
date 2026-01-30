@@ -134,6 +134,7 @@ export const DIALOGS: Record<string, Dialog> = {
             { speaker: 'BULLO', text: '...Andiamo via.' },
             { speaker: 'MASCHERA', text: 'Vedi? Il potere funziona.' },
         ],
+        onComplete: 'start_minigame',
     },
 
     father_house_enter: {
