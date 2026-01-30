@@ -188,6 +188,7 @@ export class DialogManager {
             text.setScrollFactor(0);
             text.setDepth(1001);
             this.choiceTexts.push(text);
+            this.container.add(text); // Fix visibility by adding to container
         });
     }
 

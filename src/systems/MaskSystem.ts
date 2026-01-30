@@ -10,6 +10,7 @@ export class MaskSystem {
     private icon: Phaser.GameObjects.Image;
     private container: Phaser.GameObjects.Container;
     private glitchTimer: Phaser.Time.TimerEvent | null = null;
+    private taskText: Phaser.GameObjects.Text; // Added property
 
     private constructor() { }
 
@@ -56,8 +57,24 @@ export class MaskSystem {
         });
         this.text.setOrigin(0.5);
 
-        this.container.add([bg, this.icon, barBg, this.bar, this.text]);
+        // Task Objective Text
+        this.taskText = this.scene.add.text(400, 35, 'OBIETTIVO: SOPRAVVIVI', {
+            fontFamily: 'monospace',
+            fontSize: '18px',
+            color: '#ffd700',
+            backgroundColor: '#00000088',
+            padding: { x: 10, y: 5 }
+        });
+        this.taskText.setOrigin(0.5);
+
+        this.container.add([bg, this.icon, barBg, this.bar, this.text, this.taskText]);
         this.updateHUD();
+    }
+
+    updateTask(task: string): void {
+        if (this.taskText) {
+            this.taskText.setText(`OBIETTIVO: ${task.toUpperCase()}`);
+        }
     }
 
     modifyScore(amount: number): void {
@@ -93,8 +110,6 @@ export class MaskSystem {
 
         this.text.setText(`${this.score}`);
 
-        // Static tint effect removed due to TS limitation and runtime crash
-        // (clearTint is not a function)
     }
 
     private startGlitchEffect(): void {
