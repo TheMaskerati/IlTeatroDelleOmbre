@@ -284,8 +284,8 @@
 #### Nuovi minigame da aggiungere
 
 - [x] Memory (carte da teatro)
-- [ ] Reaction (schiva attacchi)
-- [ ] Pattern matching (sequenza movimenti)
+- [x] Reaction (schiva attacchi)
+- [x] Pattern matching (sequenza movimenti)
 
 #### Files da modificare
 

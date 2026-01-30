@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { MaskSystem } from './MaskSystem';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '@/config/gameConfig';
 
-type MinigameType = 'qte' | 'balance' | 'rhythm' | 'hold' | 'breath' | 'focus' | 'memory';
+type MinigameType = 'qte' | 'balance' | 'rhythm' | 'hold' | 'breath' | 'focus' | 'memory' | 'reaction' | 'pattern';
 
 export class MinigameManager {
     private scene: Phaser.Scene;
@@ -62,6 +62,19 @@ export class MinigameManager {
     private memoryMatches: number = 0;
     private memoryLocked: boolean = false;
 
+    /* Reaction Props */
+    private reactionObstacles: Phaser.GameObjects.Rectangle[] = [];
+    private reactionPlayer: Phaser.GameObjects.Rectangle;
+    private reactionDodges: number = 0;
+    private reactionGoal: number = 5;
+
+    /* Pattern Props */
+    private patternSequence: number[] = [];
+    private patternInput: number[] = [];
+    private patternButtons: Phaser.GameObjects.Rectangle[] = [];
+    private patternShowingIndex: number = 0;
+    private patternInputMode: boolean = false;
+
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
         this.createUI();
@@ -114,7 +127,7 @@ export class MinigameManager {
     }
 
     startRandom(difficulty: number, onComplete: (success: boolean) => void): void {
-        const types: MinigameType[] = ['qte', 'balance', 'rhythm', 'hold', 'breath', 'focus', 'memory'];
+        const types: MinigameType[] = ['qte', 'balance', 'rhythm', 'hold', 'breath', 'focus', 'memory', 'reaction', 'pattern'];
         const type = types[Math.floor(Math.random() * types.length)];
         this.startMinigame(type, difficulty, onComplete);
     }
@@ -146,6 +159,8 @@ export class MinigameManager {
             case 'breath': this.setupBreath(difficulty); break;
             case 'focus': this.setupFocus(difficulty); break;
             case 'memory': this.setupMemory(difficulty); break;
+            case 'reaction': this.setupReaction(difficulty); break;
+            case 'pattern': this.setupPattern(difficulty); break;
         }
     }
 
@@ -157,6 +172,11 @@ export class MinigameManager {
         this.focusTarget.setVisible(false);
         this.memoryCards.forEach(c => { c.destroy(); });
         this.memoryCards = [];
+        this.reactionObstacles.forEach(o => { o.destroy(); });
+        this.reactionObstacles = [];
+        if (this.reactionPlayer) this.reactionPlayer.setVisible(false);
+        this.patternButtons.forEach(b => { b.destroy(); });
+        this.patternButtons = [];
     }
 
     /** SETUP METHODS */
@@ -308,6 +328,131 @@ export class MinigameManager {
         }
     }
 
+    private setupReaction(difficulty: number): void {
+        this.instructionText.setText('SCHIVA GLI OSTACOLI! [A/D o FRECCE]');
+        this.reactionDodges = 0;
+        this.reactionGoal = 5 + Math.floor(difficulty);
+        this.reactionObstacles = [];
+
+        /* Create player character at bottom */
+        this.reactionPlayer = this.scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 100, 40, 40, 0x00ff00);
+        this.reactionPlayer.setVisible(true);
+        this.container.add(this.reactionPlayer);
+
+        /* Spawn obstacles periodically */
+        const spawnInterval = Math.max(400, 800 - difficulty * 50);
+        const spawnEvent = this.scene.time.addEvent({
+            delay: spawnInterval,
+            callback: () => {
+                if (!this.isActive) return;
+                const lane = Phaser.Math.Between(0, 2);
+                const x = GAME_WIDTH / 2 + (lane - 1) * 100;
+                const obs = this.scene.add.rectangle(x, GAME_HEIGHT / 2 - 150, 50, 30, 0xff0000);
+                this.reactionObstacles.push(obs);
+                this.container.add(obs);
+            },
+            repeat: this.reactionGoal + 2
+        });
+
+        /* Input handling */
+        this.scene.input.keyboard?.on('keydown-A', () => this.moveReactionPlayer(-1));
+        this.scene.input.keyboard?.on('keydown-D', () => this.moveReactionPlayer(1));
+        this.scene.input.keyboard?.on('keydown-LEFT', () => this.moveReactionPlayer(-1));
+        this.scene.input.keyboard?.on('keydown-RIGHT', () => this.moveReactionPlayer(1));
+
+        this.startTimer(15000, false);
+    }
+
+    private moveReactionPlayer(direction: number): void {
+        if (!this.reactionPlayer) return;
+        const newX = Phaser.Math.Clamp(this.reactionPlayer.x + direction * 100, GAME_WIDTH / 2 - 100, GAME_WIDTH / 2 + 100);
+        this.reactionPlayer.x = newX;
+    }
+
+    private setupPattern(difficulty: number): void {
+        this.instructionText.setText('MEMORIZZA LA SEQUENZA!');
+        this.patternSequence = [];
+        this.patternInput = [];
+        this.patternInputMode = false;
+        this.patternButtons = [];
+
+        /* Create 4 colored buttons */
+        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00];
+        const buttonSize = 80;
+        const startX = GAME_WIDTH / 2 - buttonSize * 2 + buttonSize / 2;
+        const y = GAME_HEIGHT / 2 + 50;
+
+        for (let i = 0; i < 4; i++) {
+            const btn = this.scene.add.rectangle(startX + i * (buttonSize + 10), y, buttonSize, buttonSize, colors[i], 0.5);
+            btn.setStrokeStyle(3, 0xffffff);
+            btn.setInteractive({ useHandCursor: true });
+            btn.setData('index', i);
+            btn.on('pointerdown', () => this.patternButtonPress(i));
+            this.patternButtons.push(btn);
+            this.container.add(btn);
+        }
+
+        /* Generate sequence */
+        const seqLength = 3 + Math.floor(difficulty);
+        for (let i = 0; i < seqLength; i++) {
+            this.patternSequence.push(Phaser.Math.Between(0, 3));
+        }
+
+        /* Show sequence after delay */
+        this.scene.time.delayedCall(1000, () => this.showPatternSequence());
+    }
+
+    private showPatternSequence(): void {
+        this.patternShowingIndex = 0;
+        this.instructionText.setText('MEMORIZZA!');
+
+        const showNext = () => {
+            if (this.patternShowingIndex >= this.patternSequence.length) {
+                this.patternInputMode = true;
+                this.instructionText.setText('RIPETI LA SEQUENZA!');
+                return;
+            }
+
+            const idx = this.patternSequence[this.patternShowingIndex];
+            const btn = this.patternButtons[idx];
+            btn.setAlpha(1);
+            this.scene.time.delayedCall(300, () => {
+                btn.setAlpha(0.5);
+                this.patternShowingIndex++;
+                this.scene.time.delayedCall(200, showNext);
+            });
+        };
+
+        showNext();
+        this.startTimer(20000, false);
+    }
+
+    private patternButtonPress(index: number): void {
+        if (!this.patternInputMode) return;
+
+        const btn = this.patternButtons[index];
+        btn.setAlpha(1);
+        this.scene.time.delayedCall(150, () => btn.setAlpha(0.5));
+
+        this.patternInput.push(index);
+
+        const inputIdx = this.patternInput.length - 1;
+        if (this.patternSequence[inputIdx] !== index) {
+            /* Wrong! */
+            this.combo = 0;
+            this.scene.cameras.main.shake(200, 0.02);
+            this.endMinigame(false);
+            return;
+        }
+
+        this.combo++;
+        if (this.patternInput.length === this.patternSequence.length) {
+            /* Complete! */
+            this.scene.cameras.main.flash(200, 0, 255, 0);
+            this.endMinigame(true);
+        }
+    }
+
     private startTimer(duration: number, winOnTimeout: boolean): void {
         if (this.gameTimer) this.gameTimer.remove();
         this.gameTimer = this.scene.time.delayedCall(duration, () => {
@@ -328,6 +473,8 @@ export class MinigameManager {
             case 'hold': this.updateHold(); break;
             case 'breath': this.updateBreath(time, delta); break;
             case 'focus': this.updateFocus(delta); break;
+            case 'reaction': this.updateReaction(delta); break;
+            /* pattern is event-driven, no update needed */
         }
     }
 
@@ -435,6 +582,43 @@ export class MinigameManager {
         }
 
         if (this.focusScore >= this.focusMaxScore) this.endMinigame(true);
+    }
+
+    private updateReaction(delta: number): void {
+        if (!this.reactionPlayer) return;
+
+        const speed = delta * 0.3;
+
+        /* Move obstacles down */
+        for (let i = this.reactionObstacles.length - 1; i >= 0; i--) {
+            const obs = this.reactionObstacles[i];
+            obs.y += speed;
+
+            /* Check collision with player */
+            const playerBounds = this.reactionPlayer.getBounds();
+            const obsBounds = obs.getBounds();
+            if (Phaser.Geom.Rectangle.Overlaps(playerBounds, obsBounds)) {
+                /* Hit! */
+                this.scene.cameras.main.shake(200, 0.02);
+                this.scene.cameras.main.flash(100, 255, 0, 0);
+                this.endMinigame(false);
+                return;
+            }
+
+            /* Remove if past player */
+            if (obs.y > GAME_HEIGHT / 2 + 120) {
+                obs.destroy();
+                this.reactionObstacles.splice(i, 1);
+                this.reactionDodges++;
+                this.combo++;
+                this.instructionText.setText(`SCHIVA!\\nDodges: ${this.reactionDodges}/${this.reactionGoal}`);
+
+                if (this.reactionDodges >= this.reactionGoal) {
+                    this.endMinigame(true);
+                    return;
+                }
+            }
+        }
     }
 
     /** UTILS */

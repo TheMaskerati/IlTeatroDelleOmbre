@@ -77,12 +77,8 @@ export class AchievementsScene extends BaseScene {
         const card = this.add.rectangle(x, y, 180, 90, isUnlocked ? 0x2a2a4e : 0x1a1a2e);
         card.setStrokeStyle(2, isUnlocked ? 0xd4af37 : 0x333344);
 
-        const iconBg = this.add.circle(x - 50, y, 25, isUnlocked ? 0xd4af37 : 0x333344);
-
-        const iconText = this.add.text(x - 50, y, this.getIconEmoji(ach.icon), {
-            fontSize: '24px'
-        });
-        iconText.setOrigin(0.5);
+        const iconBg = this.add.circle(x - 50, y, 25, isUnlocked ? 0x2a2a4e : 0x1a1a2e);
+        this.drawTrophyIcon(x - 50, y, isUnlocked);
 
         const name = this.add.text(x + 10, y - 20, ach.name, {
             fontFamily: 'monospace',
@@ -105,20 +101,29 @@ export class AchievementsScene extends BaseScene {
         }
     }
 
-    private getIconEmoji(icon: string): string {
-        const icons: Record<string, string> = {
-            shield: 'S',
-            star: '*',
-            mask: 'M',
-            dove: 'D',
-            crown: 'C',
-            clock: 'T',
-            book: 'B',
-            trophy: 'W',
-            compass: 'X',
-            heart: 'H'
-        };
-        return icons[icon] || '?';
+    private drawTrophyIcon(x: number, y: number, isUnlocked: boolean): void {
+        const color = isUnlocked ? 0xd4af37 : 0x555555;
+        const g = this.add.graphics();
+
+        /* Trophy cup body */
+        g.fillStyle(color, 1);
+        g.fillRoundedRect(x - 12, y - 10, 24, 18, 4);
+
+        /* Trophy handles */
+        g.lineStyle(3, color, 1);
+        g.strokeCircle(x - 15, y - 2, 6);
+        g.strokeCircle(x + 15, y - 2, 6);
+
+        /* Trophy base */
+        g.fillStyle(color, 1);
+        g.fillRect(x - 8, y + 8, 16, 4);
+        g.fillRect(x - 12, y + 12, 24, 4);
+
+        /* Star on trophy if unlocked */
+        if (isUnlocked) {
+            const star = this.add.star(x, y - 2, 5, 4, 8, 0xffffff);
+            star.setAlpha(0.8);
+        }
     }
 
     private createBackButton(): void {

@@ -275,24 +275,31 @@ export class BootScene extends Phaser.Scene {
             tex.add(`${dir}_walk1`, 0, 1 * frameW, row * frameH, frameW, frameH);
             tex.add(`${dir}_walk2`, 0, 2 * frameW, row * frameH, frameW, frameH);
 
-            /* Animations */
-            this.anims.create({
-                key: `${key}_idle_${dir}`,
-                frames: [{ key, frame: `${dir}_idle` }],
-                frameRate: 1
-            });
+            /* Animations - only create if they don't exist */
+            const idleKey = `${key}_idle_${dir}`;
+            const walkKey = `${key}_walk_${dir}`;
 
-            this.anims.create({
-                key: `${key}_walk_${dir}`,
-                frames: [
-                    { key, frame: `${dir}_walk1` },
-                    { key, frame: `${dir}_idle` },
-                    { key, frame: `${dir}_walk2` },
-                    { key, frame: `${dir}_idle` }
-                ],
-                frameRate: 8,
-                repeat: -1
-            });
+            if (!this.anims.exists(idleKey)) {
+                this.anims.create({
+                    key: idleKey,
+                    frames: [{ key, frame: `${dir}_idle` }],
+                    frameRate: 1
+                });
+            }
+
+            if (!this.anims.exists(walkKey)) {
+                this.anims.create({
+                    key: walkKey,
+                    frames: [
+                        { key, frame: `${dir}_walk1` },
+                        { key, frame: `${dir}_idle` },
+                        { key, frame: `${dir}_walk2` },
+                        { key, frame: `${dir}_idle` }
+                    ],
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
         }
     }
 
