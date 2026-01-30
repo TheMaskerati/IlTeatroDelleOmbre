@@ -4,7 +4,10 @@
   "private": true,
   "version": "1.0.0",
   "description": "Un viaggio nei sogni di Gennaro - RPG narrativo",
-  "author": "TheMaskerati",
+  "author": {
+    "name": "TheMaskerati",
+    "email": "info@themaskerati.com"
+  },
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {

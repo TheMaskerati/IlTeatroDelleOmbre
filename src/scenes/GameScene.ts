@@ -14,6 +14,7 @@ import { KarmaSystem } from '@/systems/KarmaSystem';
 import { TransitionManager } from '@/effects/TransitionManager';
 import { TimeManager } from '@/systems/TimeManager';
 import { VirtualJoystick } from '@/ui/VirtualJoystick';
+import { SaveSystem } from '@/systems/SaveSystem';
 
 interface GameSceneData {
     map?: MapKey;
@@ -306,9 +307,25 @@ export class GameScene extends BaseScene {
 
                 this.minigameManager.start(minigameType, difficulty, (success) => {
                     if (success) {
-                        this.dialogManager.show('minigame_win', () => {
+                        /* Record Karma based on approach */
+                        if (minigameType === 'timing') {
+                            KarmaSystem.recordBattleAction('resist');
+                        } else if (minigameType === 'mash') {
+                            KarmaSystem.recordBattleAction('fight');
+                        }
+
+                        /* Determine Win Dialog */
+                        let winDialogId = 'minigame_win';
+                        if (npc.getId() === 'father_shadow') {
+                            winDialogId = minigameType === 'timing' ? 'father_defeated_resist' : 'father_defeated_mask';
+                        } else if (npc.getId() === 'dario') {
+                            winDialogId = minigameType === 'timing' ? 'dario_defeated' : 'dario_victory_mask';
+                        }
+
+                        this.dialogManager.show(winDialogId, () => {
                             this.player.unfreeze();
                             npc.setDefeated(true);
+                            SaveSystem.defeatBoss(npc.getId());
                             MaskSystem.getInstance().updateTask('TROVA L\'USCITA');
                         });
                     } else {
@@ -338,6 +355,12 @@ export class GameScene extends BaseScene {
         /* If we are entering theater and we are not coming from apartment */
         if (nextMap === 'theater' && this.currentMap !== 'apartment') {
             this.stage++;
+        }
+
+        /* Check for Ending Condition */
+        if (this.currentMap === 'fatherHouse' && SaveSystem.isBossDefeated('father_shadow')) {
+            this.scene.start(SCENES.ENDING);
+            return;
         }
 
         this.transitionToMap(nextMap, targetX, targetY);
