@@ -101,8 +101,9 @@ export class MenuScene extends BaseScene {
     }
 
     private createButtons(): void {
-        const buttonY = GAME_HEIGHT / 2 + 50;
+        const buttonY = GAME_HEIGHT / 2 + 40; /* Started 10px higher */
         const hasSave = SaveSystem.hasSave();
+        const spacing = 50; /* Reduced from 60 */
 
         this.createButton(GAME_WIDTH / 2, buttonY, 'NUOVA PARTITA', () => {
             SaveSystem.reset();
@@ -113,7 +114,7 @@ export class MenuScene extends BaseScene {
             let step = 0;
             const preview = this.createSavePreview(GAME_WIDTH / 2 + 200, buttonY + 30);
 
-            const btn = this.createButton(GAME_WIDTH / 2, buttonY + 60, 'CONTINUA', () => {
+            const btn = this.createButton(GAME_WIDTH / 2, buttonY + spacing, 'CONTINUA', () => {
                 if (step === 0) {
                     /* Show Preview */
                     step = 1;
@@ -133,23 +134,23 @@ export class MenuScene extends BaseScene {
                 }
             });
 
-            this.createButton(GAME_WIDTH / 2, buttonY + 120, 'IMPOSTAZIONI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 2, 'IMPOSTAZIONI', () => {
                 this.scene.launch(SCENES.SETTINGS);
             });
-            this.createButton(GAME_WIDTH / 2, buttonY + 180, 'TROFEI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 3, 'TROFEI', () => {
                 this.scene.start(SCENES.ACHIEVEMENTS);
             });
-            this.createButton(GAME_WIDTH / 2, buttonY + 240, 'CREDITI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 4, 'CREDITI', () => {
                 this.scene.start(SCENES.CREDITS);
             });
         } else {
-            this.createButton(GAME_WIDTH / 2, buttonY + 60, 'IMPOSTAZIONI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing, 'IMPOSTAZIONI', () => {
                 this.scene.launch(SCENES.SETTINGS);
             });
-            this.createButton(GAME_WIDTH / 2, buttonY + 120, 'TROFEI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 2, 'TROFEI', () => {
                 this.scene.start(SCENES.ACHIEVEMENTS);
             });
-            this.createButton(GAME_WIDTH / 2, buttonY + 180, 'CREDITI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 3, 'CREDITI', () => {
                 this.scene.start(SCENES.CREDITS);
             });
         }
