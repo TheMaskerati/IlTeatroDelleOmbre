@@ -142,7 +142,7 @@ export class AchievementsScene extends BaseScene {
             }).setOrigin(0.5);
             card.add(check);
         } else {
-            const lock = this.add.text(width / 2 - 30, 0, '🔒', {
+            const lock = this.add.text(width / 2 - 30, 0, 'BLOCCATO', {
                 fontSize: '20px',
                 color: '#444444'
             }).setOrigin(0.5);

@@ -135,7 +135,7 @@
 #### Files da modificare/creare
 
 - `src/systems/EffectsManager.ts`
-- Aggiornare `GameScene.ts` con HUD
+- Sembra `GameScene.ts` con HUD
 
 ---
 
