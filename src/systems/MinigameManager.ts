@@ -49,7 +49,8 @@ export class MinigameManager {
 
     // Focus Props
     private focusTarget: Phaser.GameObjects.Star;
-    private focusCrosshair: Phaser.GameObjects.Sprite; // Using rectangle/primitive
+    private focusCrosshair: Phaser.GameObjects.Sprite;
+    // Using rectangle/primitive
     private focusScore: number = 0;
     private focusMaxScore: number = 1000;
 
