@@ -14,6 +14,33 @@ export const DIALOGS: Record<string, Dialog> = {
         ],
     },
 
+    generic_intro: {
+        id: 'generic_intro',
+        lines: [
+            { speaker: 'OMBRA', text: 'Ti senti osservato.' },
+            { speaker: 'MASCHERA', text: 'Un\'altra prova ti attende.' },
+            { text: 'L\'aria si fa pesante. Scegli la tua Maschera.' },
+        ],
+    },
+
+    minigame_win: {
+        id: 'minigame_win',
+        lines: [
+            { text: 'Riesci a mantenere il controllo.' },
+            { speaker: 'GENNARO', text: 'Non questa volta.' },
+            { text: 'L\'ostacolo svanisce nel nulla.' },
+        ],
+    },
+
+    minigame_loss: {
+        id: 'minigame_loss',
+        lines: [
+            { text: 'La pressione è troppo forte.' },
+            { speaker: 'MASCHERA', text: 'Sei debole.' },
+            { text: 'La maschera prende il sopravvento per un istante.' },
+        ],
+    },
+
     dario_intro: {
         id: 'dario_intro',
         lines: [
@@ -23,7 +50,7 @@ export const DIALOGS: Record<string, Dialog> = {
             { speaker: 'GENNARO', text: '...' },
             { speaker: 'DARIO', text: 'Lascia che ti insegni il tuo posto!' },
         ],
-        onComplete: 'battle_dario',
+        onComplete: 'battle_dario', // TODO: Remove or ignore in Endless
     },
 
     dario_defeated: {

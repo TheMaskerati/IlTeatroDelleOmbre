@@ -13,7 +13,7 @@ interface GameSceneData {
     map?: MapKey;
     playerX?: number;
     playerY?: number;
-    fromDoor?: boolean;
+    stage?: number; // Nuovo: Traccia il round corrente
 }
 
 export class GameScene extends BaseScene {
@@ -25,10 +25,13 @@ export class GameScene extends BaseScene {
     private minigameManager!: MinigameManager;
     private interactionPrompt!: Phaser.GameObjects.Text;
     private mapNameText!: Phaser.GameObjects.Text;
+    private stageText!: Phaser.GameObjects.Text;
 
-    // Stati locali partita (sostituiscono SaveSystem)
-    private static actProgress = 0; // 0=Tutorial, 1=Teatro, 2=Bar, 3=Casa
+    private stage: number = 1;
     private static tutorialDone = false;
+
+    // Map Cycle per Endless Mode
+    private readonly MAP_CYCLE: MapKey[] = ['theater', 'bar', 'fatherHouse'];
 
     constructor() {
         super(SCENES.GAME);
@@ -37,6 +40,7 @@ export class GameScene extends BaseScene {
     init(data?: GameSceneData): void {
         super.init();
         this.currentMap = data?.map || 'apartment';
+        this.stage = data?.stage || 1;
         this.npcs = [];
     }
 
@@ -63,34 +67,36 @@ export class GameScene extends BaseScene {
         this.setupDoorTriggers();
         this.setupCamera(mapWidth, mapHeight);
 
-        // 3. Game Flow Logic (Atti)
-        this.checkActStart();
-
-        this.showMapName();
+        // 3. Game Flow Logic
+        if (this.currentMap === 'apartment' && !GameScene.tutorialDone) {
+            this.startTutorial();
+        } else {
+            this.showMapName();
+        }
     }
 
     private getStartPosition(data?: GameSceneData): { x: number; y: number } {
         if (data?.playerX !== undefined && data?.playerY !== undefined) {
             return { x: data.playerX, y: data.playerY };
         }
-        // Defaults per spawn iniziale
-        const defaults: Record<MapKey, { x: number; y: number }> = {
+        const defaults: Record<string, { x: number; y: number }> = {
             apartment: { x: 10 * TILE_SIZE * SCALE, y: 10 * TILE_SIZE * SCALE },
             theater: { x: 5 * TILE_SIZE * SCALE, y: 20 * TILE_SIZE * SCALE },
-            bar: { x: 8 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE }, // Bar mappa?
+            bar: { x: 8 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
             fatherHouse: { x: 12 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
-            naplesAlley: { x: 5 * TILE_SIZE * SCALE, y: 20 * TILE_SIZE * SCALE } // Usato come connettore?
         };
-        return defaults[this.currentMap] || { x: 0, y: 0 };
+        return defaults[this.currentMap] || { x: 100, y: 100 };
     }
 
     private createNPCs(): void {
-        // Logica semplificata: crea solo NPC rilevanti per l'atto corrente
+        // Spawn NPC random per encounter in base alla mappa
+        // In Endless Mode, ogni mappa ha un "Guardian" o NPC casuale
         const npcIds = this.mapManager.getNPCIds();
+
         npcIds.forEach(id => {
-            const config = ENEMIES[id];
-            if (config) {
-                const npc = new NPC(this, config);
+            // Semplificazione: Spawniamo solo se defined in ENEMIES
+            if (ENEMIES[id]) {
+                const npc = new NPC(this, ENEMIES[id]);
                 this.npcs.push(npc);
             }
         });
@@ -108,73 +114,68 @@ export class GameScene extends BaseScene {
             fontFamily: 'monospace', fontSize: '20px',
             color: '#ffd700', backgroundColor: '#000000aa', padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
+
+        // Stage Display
+        this.stageText = this.add.text(GAME_WIDTH - 20, 20, `STAGE ${this.stage}`, {
+            fontFamily: 'monospace', fontSize: '24px', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
     }
 
     private showMapName(): void {
         const names: Record<string, string> = {
-            apartment: 'Monolocale (Atto 0)',
-            theater: 'Teatro San Carlo (Atto 1)',
-            bar: 'Bar dei Vicoli (Atto 2)',
-            fatherHouse: 'Casa del Padre (Atto 3)',
+            apartment: 'Il Risveglio',
+            theater: 'Il Teatro',
+            bar: 'Il Bar',
+            fatherHouse: 'La Casa',
         };
-        this.mapNameText.setText(names[this.currentMap] || '');
+        const name = names[this.currentMap] || this.currentMap;
+        this.mapNameText.setText(`${name} - Round ${this.stage}`);
         this.tweens.add({ targets: this.mapNameText, alpha: 1, duration: 500, hold: 2000, yoyo: true });
     }
 
-    private checkActStart(): void {
-        // Atto 0: Monolocale
-        if (this.currentMap === 'apartment' && !GameScene.tutorialDone) {
-            this.time.delayedCall(1000, () => {
-                this.dialogManager.show('intro_apartment', () => {
-                    GameScene.tutorialDone = true;
-                });
+    private startTutorial(): void {
+        this.time.delayedCall(1000, () => {
+            this.dialogManager.show('intro_apartment', () => {
+                GameScene.tutorialDone = true;
+                // Tutorial ends, enable interaction with door to start loop
             });
-        }
+        });
     }
 
     update(time: number, delta: number): void {
-        // Blocca update se dialog o minigame attivi
-        if (this.dialogManager.isActive()) {
-            this.dialogManager.handleInput(this.keys); // Se serve input
+        if (this.dialogManager.isActive() || this.minigameManager.isMinigameActive()) {
+            this.minigameManager.update(time, delta);
+            if (this.dialogManager.isActive()) this.dialogManager.handleInput(this.keys);
             return;
         }
 
-        // Minigame update è gestito internamente al manager,
-        // ma se è attivo dobbiamo bloccare player
-        // MinigameManager.update(time, delta) va chiamato qui
-        this.minigameManager.update(time, delta);
-        if (this.isMinigameActive()) return;
-
-        // Player Movement
-        const input = this.getMovementInput(); // WASD già gestito in BaseScene?
-
-        // Usa input "E" per interazione come da richiesta
+        const input = this.getMovementInput();
         const interactPressed = Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E));
 
         this.player.update(input, delta);
         this.npcs.forEach(npc => npc.update(delta, this.player.getPosition()));
 
-        // Check Interactions
+        // Interactions
         let nearTarget = false;
 
-        // 1. NPC
+        // NPC -> Minigame Encounter
         this.npcs.forEach(npc => {
             if (Phaser.Math.Distance.BetweenPoints(this.player.getPosition(), npc.getPosition()) < 50) {
                 nearTarget = true;
-                this.interactionPrompt.setText(`[E] ${npc.getName()}`).setVisible(true);
-                if (interactPressed) this.startInteraction(npc);
+                this.interactionPrompt.setText(`[E] Sfida ${npc.getName()}`).setVisible(true);
+                if (interactPressed) this.startEncounter(npc);
             }
         });
 
-        // 2. Porte
+        // Doors -> Next Map
         if (!nearTarget) {
             const doors = this.mapManager.getDoors();
             doors.forEach(door => {
                 if (Phaser.Math.Distance.Between(this.player.getPosition().x, this.player.getPosition().y,
                     door.x * TILE_SIZE * SCALE, door.y * TILE_SIZE * SCALE) < 50) {
                     nearTarget = true;
-                    this.interactionPrompt.setText(`[E] ${door.label || 'Uscita'}`).setVisible(true);
-                    if (interactPressed) this.transitionToMap(door);
+                    this.interactionPrompt.setText(`[E] ${door.label || 'Avanti'}`).setVisible(true);
+                    if (interactPressed) this.handleDoor(door);
                 }
             });
         }
@@ -182,63 +183,76 @@ export class GameScene extends BaseScene {
         if (!nearTarget) this.interactionPrompt.setVisible(false);
     }
 
-    private isMinigameActive(): boolean {
-        // Hack rapido per controllare stato. L'ideale è un getter pubblico su MinigameManager
-        return (this.minigameManager as any).isActive;
-    }
-
-    private startInteraction(npc: NPC): void {
+    private startEncounter(npc: NPC): void {
         this.player.freeze();
+        this.interactionPrompt.setVisible(false);
 
-        // Flow: Dialog -> Scelta -> Minigame -> Conseguenza
-        // Questo va configurato nel DialogManager o qui hardcoded per la Jam
+        // 1. Dialogo Pre-Encounter (Placeholder o specifico)
+        const dialogId = npc.getDialogId() || 'generic_intro';
 
-        if (npc.getId() === 'dario' && this.currentMap === 'theater') {
-            this.startMainEncounter('dario');
-        } else if (npc.getId() === 'bulli' && this.currentMap === 'bar') {
-            this.startMainEncounter('bulli');
-        } else if (npc.getId() === 'father_shadow' && this.currentMap === 'fatherHouse') {
-            this.startMainEncounter('father');
-        } else {
-            // Dialogo generico
-            this.dialogManager.show(npc.getDialogId() || 'generic', () => {
-                this.player.unfreeze();
+        this.dialogManager.show(dialogId, () => {
+            // 2. Start Random Minigame
+            // Difficulty increases with Stage
+            const difficulty = 1.0 + (this.stage * 0.2);
+
+            this.minigameManager.startRandom(difficulty, (success) => {
+                // 3. Post Minigame
+                if (success) {
+                    this.dialogManager.show('minigame_win', () => {
+                        this.player.unfreeze();
+                        // NPC Defeated? Disappear?
+                        npc.setDefeated(true);
+                    });
+                } else {
+                    this.dialogManager.show('minigame_loss', () => {
+                        this.player.unfreeze();
+                    });
+                }
             });
-        }
-    }
-
-    private startMainEncounter(target: string): void {
-        // Esempio Flow
-        // 1. Dialogo iniziale
-        this.dialogManager.show(`${target}_intro`, () => {
-            // 2. Popup Scelta (Maschera ON/OFF) - Da implementare come UI Scene o Dialog speciale
-            // Per ora simuliamo con logica diretta o un dialogo che fa la scelta
-            // Idealmente DialogManager supporta scelte che triggerano callback
-
-            // TODO: DialogManager deve ritornare la scelta fatta
-            // Assumiamo che DialogManager apra il minigioco
-            this.player.unfreeze(); // Temp
         });
     }
 
-    private transitionToMap(door: DoorConfig): void {
+    private handleDoor(door: DoorConfig): void {
+        // Logica Endless:
+        // Se siamo in Apartment, andiamo al Theater (avvio loop)
+        // Se siamo nel loop, andiamo alla next map nel ciclo
+
+        // In Endless Mode, ignoriamo il targetMap della porta e usiamo il ciclo
+        let nextMap: MapKey = 'theater';
+
+        if (this.currentMap === 'apartment') {
+            nextMap = 'theater';
+        } else {
+            const currentIndex = this.MAP_CYCLE.findIndex(m => m === this.currentMap);
+            const nextIndex = (currentIndex + 1) % this.MAP_CYCLE.length;
+            nextMap = this.MAP_CYCLE[nextIndex];
+
+            // Increment stage ONLY when completing a cycle (returning to Theater)
+            if (nextIndex === 0) {
+                this.stage++;
+            }
+        }
+
+        this.transitionToMap(nextMap);
+    }
+
+    private transitionToMap(nextMap: MapKey): void {
         this.cameras.main.fadeOut(500);
         this.cameras.main.once('camerafadeoutcomplete', () => {
             this.scene.start(SCENES.GAME, {
-                map: door.targetMap,
-                playerX: door.targetX * TILE_SIZE * SCALE,
-                playerY: door.targetY * TILE_SIZE * SCALE
+                map: nextMap,
+                stage: this.stage,
+                // Coord placeholder, MapManager should handle spawns better ideally
+                playerX: 100,
+                playerY: 100
             });
         });
     }
 
-    // Setup Helpers
     private setupNPCCollisions(): void {
         this.npcs.forEach(npc => this.physics.add.collider(this.player.getSprite(), npc.getSprite()));
     }
-    private setupDoorTriggers(): void {
-        // Porte ora gestite con check distanza in update per semplicità con "E"
-    }
+    private setupDoorTriggers(): void { }
     private setupCamera(w: number, h: number): void {
         this.cameras.main.setBounds(0, 0, w, h);
         this.cameras.main.startFollow(this.player.getSprite(), true, 0.1, 0.1);
