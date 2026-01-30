@@ -1,6 +1,6 @@
-import Phaser from 'phaser';
 import { SCENES, COLORS, GAME_WIDTH, GAME_HEIGHT } from '@/config/gameConfig';
 import { ErrorHandler } from '@/systems/ErrorHandler';
+import { SaveSystem } from '@/systems/SaveSystem';
 
 /**
  * Boot Scene
@@ -33,6 +33,15 @@ export class BootScene extends Phaser.Scene {
             /* Defer generation slightly to ensure scene is fully ready */
             this.time.delayedCall(100, () => {
                 this.generatePlaceholderAssets();
+
+                /* Apply generic settings */
+                const settings = SaveSystem.getSettings();
+                if (settings.fullscreen && !this.scale.isFullscreen) {
+                    /* Note: Browser may block this without user interaction,
+                       but Electron usually allows it. */
+                    this.scale.startFullscreen();
+                }
+
                 this.startGame();
             });
         });

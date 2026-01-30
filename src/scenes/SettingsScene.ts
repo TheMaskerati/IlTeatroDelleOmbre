@@ -23,6 +23,12 @@ export class SettingsScene extends Phaser.Scene {
         const centerX = GAME_WIDTH / 2;
         const centerY = GAME_HEIGHT / 2;
 
+        /* Ensure fullscreen targets the wrapper for better scaling */
+        const gameDiv = document.getElementById('game');
+        if (gameDiv) {
+            this.scale.fullscreenTarget = gameDiv;
+        }
+
         this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, COLORS.black).setOrigin(0);
 
         this.add.text(centerX, 80, 'IMPOSTAZIONI', {
