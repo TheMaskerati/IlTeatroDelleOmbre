@@ -136,6 +136,7 @@ export class AchievementsScene extends BaseScene {
 
         /* Locked / Checkmark overlay */
         if (isUnlocked) {
+<<<<<<< HEAD
             const check = this.add.text(width / 2 - 30, 0, 'SBLOCCATO', {
                 fontSize: '18px',
                 color: '#d4af37',
@@ -148,6 +149,18 @@ export class AchievementsScene extends BaseScene {
                 color: '#666666',
                 fontFamily: 'monospace'
             }).setOrigin(1, 0.5);
+=======
+            const check = this.add.text(width / 2 - 30, 0, '✓', {
+                fontSize: '24px',
+                color: '#d4af37'
+            }).setOrigin(0.5);
+            card.add(check);
+        } else {
+            const lock = this.add.text(width / 2 - 30, 0, 'BLOCCATO', {
+                fontSize: '20px',
+                color: '#444444'
+            }).setOrigin(0.5);
+>>>>>>> upstream/master
             card.add(lock);
         }
     }
