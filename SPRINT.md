@@ -319,14 +319,14 @@
 
 ### 14. SISTEMA GIORNO/NOTTE
 
-**Status:** Non implementato
+**Status:** [COMPLETATO]
 **Tempo stimato:** 2-3 giorni
 **Opzionale ma interessante**
 
 #### Features
 
-- [ ] Ciclo giorno/notte basato su progressione
-- [ ] Lighting diverso per ogni fase:
+- [x] Ciclo giorno/notte basato su progressione
+- [x] Lighting diverso per ogni fase:
 - Mattina (luce calda)
 - Pomeriggio (luce neutra)
 - Sera (arancione)

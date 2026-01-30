@@ -12,6 +12,7 @@ import { AudioManager } from '@/systems/AudioManager';
 import { HUD } from '@/ui/HUD';
 import { KarmaSystem } from '@/systems/KarmaSystem';
 import { TransitionManager } from '@/effects/TransitionManager';
+import { TimeManager } from '@/systems/TimeManager';
 
 interface GameSceneData {
     map?: MapKey;
@@ -78,6 +79,7 @@ export class GameScene extends BaseScene {
         this.transitionManager = new TransitionManager(this);
         this.transitionManager.open();
         MaskSystem.getInstance().init(this);
+        TimeManager.initialize(this);
 
         this.physics.add.collider(this.player.getSprite(), walls);
         this.setupNPCCollisions();
@@ -283,6 +285,7 @@ export class GameScene extends BaseScene {
     }
 
     private transitionToMap(nextMap: MapKey): void {
+        TimeManager.advanceTime();
         this.transitionManager.close().then(() => {
             this.scene.start(SCENES.GAME, {
                 map: nextMap,

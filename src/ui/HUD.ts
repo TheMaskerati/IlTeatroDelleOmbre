@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
+import { TimeManager, TimeOfDay } from '@/systems/TimeManager';
 
 /**
  * HUD System
- * Displays Karma, Mask Tension, Objective, and Stage info.
+ * Displays Karma, Mask Tension, Objective, Stage, and Time of Day.
  */
 export class HUD {
     private scene: Phaser.Scene;
@@ -20,6 +21,10 @@ export class HUD {
     private objectiveText: Phaser.GameObjects.Text;
     private stageText: Phaser.GameObjects.Text;
 
+    /* Time Elements */
+    private timeText: Phaser.GameObjects.Text;
+    private timeIcon: Phaser.GameObjects.Arc;
+
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
         this.container = this.scene.add.container(0, 0);
@@ -27,6 +32,9 @@ export class HUD {
         this.container.setDepth(1000);
 
         this.createHUD();
+
+        /* Listen for time changes */
+        TimeManager.onTimeChange((time) => this.updateTimeDisplay(time));
     }
 
     private createHUD(): void {
@@ -61,11 +69,39 @@ export class HUD {
             fontFamily: 'monospace', fontSize: '20px', color: '#ffffff', fontStyle: 'bold'
         }).setOrigin(1, 0);
 
+        /* --- TIME OF DAY (Top Right, below Stage) --- */
+        this.timeIcon = this.scene.add.arc(this.scene.cameras.main.width - padding - 100, padding + 35, 8, 0, 360, false, 0xffdd99);
+        this.timeText = this.scene.add.text(this.scene.cameras.main.width - padding - 85, padding + 28, 'POMERIGGIO', {
+            fontFamily: 'monospace', fontSize: '12px', color: '#aaaaaa'
+        }).setOrigin(0, 0);
+
         this.container.add([
             karmaBg, this.karmaIndicator, this.karmaText,
             maskBg, barBg, this.maskBar, this.maskText,
-            this.objectiveText, this.stageText
+            this.objectiveText, this.stageText,
+            this.timeIcon, this.timeText
         ]);
+
+        /* Initialize time display */
+        this.updateTimeDisplay(TimeManager.getCurrentTime());
+    }
+
+    private updateTimeDisplay(time: TimeOfDay): void {
+        const labels: Record<TimeOfDay, string> = {
+            morning: 'MATTINA',
+            afternoon: 'POMERIGGIO',
+            evening: 'SERA',
+            night: 'NOTTE'
+        };
+        const colors: Record<TimeOfDay, number> = {
+            morning: 0xffdd99,
+            afternoon: 0xffffff,
+            evening: 0xff8844,
+            night: 0x4466cc
+        };
+
+        this.timeText.setText(labels[time]);
+        this.timeIcon.setFillStyle(colors[time]);
     }
 
     /**
