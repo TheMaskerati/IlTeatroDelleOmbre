@@ -15,6 +15,8 @@
 - [x] UI del menu principale
 - [x] Sistema NPC con interazioni
 - [x] Sprite procedurali per personaggi
+- [x] Refactoring commenti (JSDoc/Multi-line)
+- [x] Rimozione emoji dalla documentazione e dal gioco
 
 ---
 
@@ -81,20 +83,20 @@
 
 ### 3. IMPOSTAZIONI/OPZIONI
 
-**Status:** [IN CORSO] (scaffold completato)
+**Status:** [COMPLETATO]
 **Tempo stimato:** 2 giorni
 **Accessibilità importante**
 
 #### Cosa implementare
 
-- [/] SettingsScene completa (scaffold)
+- [x] SettingsScene completa
 - [ ] Controlli:
-- Slider volume musica (0-100%)
-- Slider volume effetti (0-100%)
-- Slider velocità testo dialoghi
-- Toggle schermo intero
-- Selector lingua (IT/EN)
-- [ ] Salvataggio preferenze persistente
+- [x] Slider volume musica (0-100%)
+- [x] Slider volume effetti (0-100%)
+- [ ] Slider velocità testo dialoghi
+- [ ] Toggle schermo intero
+- [ ] Selector lingua (IT/EN)
+- [x] Salvataggio preferenze persistente
 - [ ] Preview in tempo reale delle modifiche
 
 #### Files da creare
@@ -210,9 +212,9 @@
 
 - [ ] Barra vita (se implementi sistema combattimento con HP)
 - [x] Indicatore karma con icona
-- [ ] Barra controllo maschera (tentazione)
-- [ ] Testo mappa corrente
-- [ ] Obiettivo attuale
+- [x] Barra controllo maschera (tentazione)
+- [x] Testo mappa corrente
+- [x] Obiettivo attuale
 - [ ] Mini-icone per stati (es: "Sotto effetto maschera")
 
 #### Files da creare
@@ -223,13 +225,13 @@
 
 ### 9. TRANSIZIONI TEATRALI
 
-**Status:** Fade semplice
+**Status:** [COMPLETATO]
 **Tempo stimato:** 2 giorni
 **Perfetto per il tema teatro!**
 
 #### Transizioni da implementare
 
-- [ ] **Sipario** che si apre/chiude (rosso velluto)
+- [x] **Sipario** che si apre/chiude (rosso velluto)
 - [ ] **Iris in/out** (stile film muto)
 - [ ] **Page turn** per cambio atti
 - [ ] **Fade attraverso nero** con testo narrativo
