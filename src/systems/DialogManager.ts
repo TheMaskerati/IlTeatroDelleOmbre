@@ -74,7 +74,7 @@ export class DialogManager {
         this.continuePrompt = this.scene.add.text(
             GAME_WIDTH - 40,
             boxY + boxHeight / 2 - 25,
-            '[SPAZIO] continua',
+            '[INVIO] continua',
             {
                 fontFamily: 'monospace',
                 fontSize: '12px',
@@ -354,8 +354,8 @@ export class DialogManager {
             return null;
         }
 
-        /* During standard dialogue, SPACE advances/skips */
-        if (Phaser.Input.Keyboard.JustDown(keys.SPACE)) {
+        /* During standard dialogue, ENTER advances/skips */
+        if (Phaser.Input.Keyboard.JustDown(keys.ENTER) || Phaser.Input.Keyboard.JustDown(keys.SPACE)) {
             if (this.isTyping) {
                 this.typewriterEvent?.destroy();
                 this.displayedText = this.fullText;
