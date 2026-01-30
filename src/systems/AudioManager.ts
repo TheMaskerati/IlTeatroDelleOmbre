@@ -141,7 +141,6 @@ export class AudioManager {
     }
 
     /**
-<<<<<<< HEAD
      * Updates audio dynamics based on game state (e.g. mask score).
      * @param score Current mask score (-100 to 100)
      */
@@ -158,10 +157,6 @@ export class AudioManager {
     /**
      * Settings: Set Music Pitch/Rate
      */
-=======
-     * Settings: Set Music Pitch/Rate
-     */
->>>>>>> upstream/master
     public setRate(value: number): void {
         if (this.currentMusic) {
             const current = this.music.get(this.currentMusic);
