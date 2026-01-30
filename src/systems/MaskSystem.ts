@@ -93,15 +93,8 @@ export class MaskSystem {
 
         this.text.setText(`${this.score}`);
 
-        // Static tint effect
-        // Static tint effect removed due to TS limitation
-        if (this.score >= 3) {
-            // this.scene.cameras.main.setTint(0xffaaaa);
-        } else if (this.score <= -3) {
-            // this.scene.cameras.main.setTint(0xaaffaa);
-        } else {
-            this.scene.cameras.main.clearTint();
-        }
+        // Static tint effect removed due to TS limitation and runtime crash
+        // (clearTint is not a function)
     }
 
     private startGlitchEffect(): void {
