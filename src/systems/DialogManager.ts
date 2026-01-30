@@ -201,7 +201,7 @@ export class DialogManager {
             text.setScrollFactor(0);
             text.setDepth(1001);
             this.choiceTexts.push(text);
-            this.container.add(text); // Fix visibility by adding to container
+            this.container.add(text); /* Fix visibility by adding to container */
         });
     }
 
@@ -224,12 +224,12 @@ export class DialogManager {
         if (!this.currentDialog?.choices) return null;
 
         const choice = this.currentDialog.choices[this.selectedChoice];
-        
-        // Applica gli effetti della scelta
+
+        /* Applica gli effetti della scelta */
         if (choice.karmaEffect) {
             KarmaSystem.recordChoice(this.currentDialog.id, choice.karmaEffect);
         }
-        
+
         this.clearChoices();
 
         if (choice.nextDialogId) {
@@ -257,7 +257,7 @@ export class DialogManager {
     handleInput(keys: Record<string, Phaser.Input.Keyboard.Key>): DialogChoice | null {
         if (!this.container.visible) return null;
 
-        // When choices are present, only ENTER confirms
+        /* When choices are present, only ENTER confirms */
         if (this.choiceTexts.length > 0) {
             if (Phaser.Input.Keyboard.JustDown(keys.UP) || Phaser.Input.Keyboard.JustDown(keys.W)) {
                 this.selectedChoice = Math.max(0, this.selectedChoice - 1);
@@ -270,14 +270,14 @@ export class DialogManager {
                 );
                 this.updateChoiceSelection();
             }
-            // Only ENTER confirms choice
+            /* Only ENTER confirms choice */
             if (Phaser.Input.Keyboard.JustDown(keys.ENTER)) {
                 return this.selectChoice();
             }
             return null;
         }
 
-        // During standard dialogue, SPACE advances/skips
+        /* During standard dialogue, SPACE advances/skips */
         if (Phaser.Input.Keyboard.JustDown(keys.SPACE)) {
             if (this.isTyping) {
                 this.typewriterEvent?.destroy();

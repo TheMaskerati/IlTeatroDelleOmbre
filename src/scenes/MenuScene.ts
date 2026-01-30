@@ -2,8 +2,11 @@ import { BaseScene } from './BaseScene';
 import { SCENES, COLORS, GAME_WIDTH, GAME_HEIGHT } from '@/config/gameConfig';
 import { SaveSystem } from '@/systems/SaveSystem';
 import { KarmaSystem } from '@/systems/KarmaSystem';
+import { TransitionManager } from '@/effects/TransitionManager';
 
 export class MenuScene extends BaseScene {
+    private transitionManager!: TransitionManager;
+
     constructor() {
         super(SCENES.MENU);
     }
@@ -11,6 +14,8 @@ export class MenuScene extends BaseScene {
     create(): void {
         super.create();
         KarmaSystem.reset();
+        this.transitionManager = new TransitionManager(this);
+        this.transitionManager.open();
 
         this.createBackground();
         this.createTitle();
@@ -92,6 +97,13 @@ export class MenuScene extends BaseScene {
             this.createButton(GAME_WIDTH / 2, buttonY + 60, 'CONTINUA', () => {
                 this.startGame(true);
             });
+            this.createButton(GAME_WIDTH / 2, buttonY + 120, 'IMPOSTAZIONI', () => {
+                this.scene.launch(SCENES.SETTINGS);
+            });
+        } else {
+            this.createButton(GAME_WIDTH / 2, buttonY + 60, 'IMPOSTAZIONI', () => {
+                this.scene.launch(SCENES.SETTINGS);
+            });
         }
     }
 
@@ -165,8 +177,7 @@ export class MenuScene extends BaseScene {
     }
 
     private startGame(continueGame = false): void {
-        this.cameras.main.fadeOut(500, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.transitionManager.close().then(() => {
             if (continueGame) {
                 const pos = SaveSystem.getPosition();
                 this.scene.start(SCENES.GAME, {

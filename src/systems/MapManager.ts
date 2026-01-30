@@ -198,7 +198,8 @@ export class MapManager {
 
             if (obj.label && textureMap[obj.label]) {
                 const sprite = this.scene.add.image(x, y, textureMap[obj.label]);
-                sprite.setDepth(obj.label === 'PALCO' ? 0 : 1); // Stage floor should be lower
+                /* Stage floor should be lower */
+                sprite.setDepth(obj.label === 'PALCO' ? 0 : 1);
                 gameObject = sprite;
             } else {
                 const rect = this.scene.add.rectangle(x, y, width, height, obj.color);

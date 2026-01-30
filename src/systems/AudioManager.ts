@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
+import { SaveSystem } from './SaveSystem';
 
 /**
  * Centralized Audio Manager system.
  * Handles background music, sound effects, and volume settings.
  */
 export class AudioManager {
+    private static instance: AudioManager;
     private scene: Phaser.Scene;
     private music: Map<string, Phaser.Sound.BaseSound> = new Map();
     private sfx: Map<string, Phaser.Sound.BaseSound> = new Map();
@@ -12,7 +14,21 @@ export class AudioManager {
     private musicVolume: number = 0.5;
     private sfxVolume: number = 0.7;
 
-    constructor(scene: Phaser.Scene) {
+    private constructor(scene: Phaser.Scene) {
+        this.scene = scene;
+        const settings = SaveSystem.getSettings();
+        this.musicVolume = settings.musicVolume;
+        this.sfxVolume = settings.sfxVolume;
+    }
+
+    public static getInstance(scene?: Phaser.Scene): AudioManager {
+        if (!AudioManager.instance && scene) {
+            AudioManager.instance = new AudioManager(scene);
+        }
+        return AudioManager.instance;
+    }
+
+    public init(scene: Phaser.Scene): void {
         this.scene = scene;
     }
 
@@ -22,7 +38,7 @@ export class AudioManager {
     public playMusic(key: string, loop: boolean = true): void {
         if (this.currentMusic === key) return;
 
-        // Stop current music
+        /* Stop current music */
         if (this.currentMusic) {
             const current = this.music.get(this.currentMusic);
             if (current) {
@@ -35,7 +51,7 @@ export class AudioManager {
             }
         }
 
-        // Start new music
+        /* Start new music */
         let sound = this.music.get(key);
         if (!sound) {
             sound = this.scene.sound.add(key, { loop, volume: 0 });
@@ -94,6 +110,13 @@ export class AudioManager {
      */
     public setSFXVolume(value: number): void {
         this.sfxVolume = Phaser.Math.Clamp(value, 0, 1);
+    }
+
+    /**
+     * Updates audio based on karma/intensity score.
+     */
+    public updateDynamicAudio(score: number): void {
+        /* TODO: Implement dynamic filters/pitch based on score */
     }
 
     /**

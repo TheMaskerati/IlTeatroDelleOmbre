@@ -16,7 +16,8 @@ interface SaveData {
     achievements: string[];
     settings: {
         language: 'it' | 'en';
-        volume: number;
+        musicVolume: number;
+        sfxVolume: number;
     };
     timestamp: number;
 }
@@ -38,7 +39,8 @@ const DEFAULT_SAVE: SaveData = {
     achievements: [],
     settings: {
         language: 'it',
-        volume: 1,
+        musicVolume: 0.5,
+        sfxVolume: 0.7,
     },
     timestamp: 0,
 };
@@ -188,8 +190,13 @@ class SaveSystemClass {
         this.save();
     }
 
-    setVolume(vol: number): void {
-        this.data.settings.volume = Math.max(0, Math.min(1, vol));
+    setMusicVolume(vol: number): void {
+        this.data.settings.musicVolume = Math.max(0, Math.min(1, vol));
+        this.save();
+    }
+
+    setSFXVolume(vol: number): void {
+        this.data.settings.sfxVolume = Math.max(0, Math.min(1, vol));
         this.save();
     }
 }

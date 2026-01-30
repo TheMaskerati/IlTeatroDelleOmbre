@@ -11,12 +11,13 @@ import { MapKey } from '@/types/game';
 import { AudioManager } from '@/systems/AudioManager';
 import { HUD } from '@/ui/HUD';
 import { KarmaSystem } from '@/systems/KarmaSystem';
+import { TransitionManager } from '@/effects/TransitionManager';
 
 interface GameSceneData {
     map?: MapKey;
     playerX?: number;
     playerY?: number;
-    stage?: number; // Nuovo: Traccia il round corrente
+    stage?: number; /* Traccia il round corrente */
 }
 
 /**
@@ -33,9 +34,9 @@ export class GameScene extends BaseScene {
     private minigameManager!: MinigameManager;
     private audioManager!: AudioManager;
     private hud!: HUD;
+    private transitionManager!: TransitionManager;
     private interactionPrompt!: Phaser.GameObjects.Text;
     private mapNameText!: Phaser.GameObjects.Text;
-    private stageText!: Phaser.GameObjects.Text;
 
     private stage: number = 1;
     private static tutorialDone = false;
@@ -72,8 +73,10 @@ export class GameScene extends BaseScene {
 
         this.dialogManager = new DialogManager(this);
         this.minigameManager = new MinigameManager(this);
-        this.audioManager = new AudioManager(this);
+        this.audioManager = AudioManager.getInstance(this);
         this.hud = new HUD(this);
+        this.transitionManager = new TransitionManager(this);
+        this.transitionManager.open();
         MaskSystem.getInstance().init(this);
 
         this.physics.add.collider(this.player.getSprite(), walls);
@@ -120,7 +123,7 @@ export class GameScene extends BaseScene {
         const npcIds = this.mapManager.getNPCIds();
 
         npcIds.forEach(id => {
-            // Semplificazione: Spawniamo solo se defined in ENEMIES
+            /* Semplificazione: Spawniamo solo se defined in ENEMIES */
             if (ENEMIES[id]) {
                 const npc = new NPC(this, ENEMIES[id]);
                 this.npcs.push(npc);
@@ -129,22 +132,18 @@ export class GameScene extends BaseScene {
     }
 
     private createUI(): void {
-        // Prompt
+        /* Prompt */
         this.interactionPrompt = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 60, '[E] Interagisci', {
             fontFamily: 'monospace', fontSize: '14px',
             color: '#ffffff', backgroundColor: '#000000cc', padding: { x: 12, y: 6 }
         }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setVisible(false);
 
-        // Map Name
+        /* Map Name */
         this.mapNameText = this.add.text(GAME_WIDTH / 2, 30, '', {
             fontFamily: 'monospace', fontSize: '20px',
             color: '#ffd700', backgroundColor: '#000000aa', padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 
-        // Stage Display
-        this.stageText = this.add.text(GAME_WIDTH - 20, 20, `STAGE ${this.stage}`, {
-            fontFamily: 'monospace', fontSize: '24px', color: '#ffffff', fontStyle: 'bold'
-        }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
     }
 
     private showMapName(): void {
@@ -181,7 +180,7 @@ export class GameScene extends BaseScene {
         this.player.update(input, delta);
         this.npcs.forEach(npc => npc.update(delta, this.player.getPosition()));
 
-        // Interactions
+        /* Interactions */
         let nearTarget = false;
 
         this.npcs.forEach(npc => {
@@ -206,9 +205,14 @@ export class GameScene extends BaseScene {
 
         if (!nearTarget) this.interactionPrompt.setVisible(false);
 
-        // Update HUD
+        /* Update HUD */
         if (this.hud) {
-            this.hud.updateKarma(KarmaSystem.getKarmaScore());
+            this.hud.update({
+                karma: KarmaSystem.getKarmaScore(),
+                maskScore: MaskSystem.getInstance().getScore(),
+                stage: this.stage,
+                objective: MaskSystem.getInstance().getObjective()
+            });
         }
     }
 
@@ -218,19 +222,19 @@ export class GameScene extends BaseScene {
 
         const dialogId = npc.getDialogId();
         this.dialogManager.show(dialogId, (action) => {
-            // Gestisce le azioni dalle scelte del dialogo
+            /* Gestisce le azioni dalle scelte del dialogo */
             if (action?.includes('battle_') || action === 'start_minigame' || npc.isBoss()) {
                 const difficulty = 1.0 + (this.stage * 0.2);
 
-                // Determina il tipo di minigame in base alla scelta
+                /* Determina il tipo di minigame in base alla scelta */
                 let minigameType: 'dodge' | 'timing' | 'mash' = 'dodge';
 
                 if (action?.includes('_calm') || action?.includes('_peaceful')) {
-                    minigameType = 'timing'; // Approccio pacifico = timing preciso
+                    minigameType = 'timing'; /* Approccio pacifico = timing preciso */
                 } else if (action?.includes('_rage') || action?.includes('_aggressive')) {
-                    minigameType = 'mash'; // Approccio aggressivo = button mashing
+                    minigameType = 'mash'; /* Approccio aggressivo = button mashing */
                 } else {
-                    minigameType = 'dodge'; // Default = schivare
+                    minigameType = 'dodge'; /* Default = schivare */
                 }
 
                 MaskSystem.getInstance().updateTask(`SCONFIGGI ${npc.getName().toUpperCase()}`);
@@ -269,7 +273,7 @@ export class GameScene extends BaseScene {
             const nextIndex = (currentIndex + 1) % this.MAP_CYCLE.length;
             nextMap = this.MAP_CYCLE[nextIndex];
 
-            // Increment stage ONLY when completing a cycle (returning to Theater)
+            /* Increment stage ONLY when completing a cycle (returning to Theater) */
             if (nextIndex === 0) {
                 this.stage++;
             }
@@ -279,12 +283,10 @@ export class GameScene extends BaseScene {
     }
 
     private transitionToMap(nextMap: MapKey): void {
-        this.cameras.main.fadeOut(500);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.transitionManager.close().then(() => {
             this.scene.start(SCENES.GAME, {
                 map: nextMap,
                 stage: this.stage,
-                // Coord placeholder, MapManager should handle spawns better ideally
                 playerX: 100,
                 playerY: 100
             });

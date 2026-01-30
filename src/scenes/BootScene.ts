@@ -13,8 +13,8 @@ export class BootScene extends Phaser.Scene {
     preload(): void {
         this.createLoadingBar();
 
-        // Audio Loading Scaffold
-        // In a real scenario, these files would exist in public/audio/
+        /* Audio Loading Scaffold
+           In a real scenario, these files would exist in public/audio/ */
         this.load.audio('bgm_apartment', 'audio/bgm/apartment.mp3');
         this.load.audio('bgm_theater', 'audio/bgm/theater.mp3');
         this.load.audio('bgm_naplesAlley', 'audio/bgm/alley.mp3');
@@ -64,7 +64,7 @@ export class BootScene extends Phaser.Scene {
      * This replaces static asset loading for prototyping/visual style.
      */
     private generatePlaceholderAssets(): void {
-        // Genera personaggi con diverse caratteristiche
+        /* Genera personaggi con diverse caratteristiche */
         this.generateCharacterSprite('player', {
             body: 0xe0d5c0,
             hair: 0x4a3728,
@@ -109,28 +109,28 @@ export class BootScene extends Phaser.Scene {
      * Generates textures for map furniture/objects based on type.
      */
     private generateFurnitureAssets(): void {
-        // Apartment
+        /* Apartment */
         this.generateFurnitureSprite('furn_bed', 80, 64, 0x654321, 'bed');
         this.generateFurnitureSprite('furn_tv', 64, 48, 0x333333, 'tv');
         this.generateFurnitureSprite('furn_table', 64, 48, 0x5a4a3a, 'table');
         this.generateFurnitureSprite('furn_fridge', 48, 48, 0xe0e0e0, 'fridge');
 
-        // Theater
+        /* Theater */
         this.generateFurnitureSprite('furn_stage', 160, 96, 0x4a2652, 'stage');
         this.generateFurnitureSprite('furn_mask', 64, 32, 0xd4af37, 'mask_obj');
 
-        // Alley
+        /* Alley */
         this.generateFurnitureSprite('furn_building', 128, 96, 0x4a4a4a, 'building');
         this.generateFurnitureSprite('furn_wall', 96, 128, 0x3a3a3a, 'wall');
         this.generateFurnitureSprite('furn_bench', 64, 64, 0x2a4a2a, 'bench');
         this.generateFurnitureSprite('furn_shop', 80, 64, 0x5a3a2a, 'shop');
 
-        // House
+        /* House */
         this.generateFurnitureSprite('furn_sofa', 96, 64, 0x4a3a3a, 'sofa');
         this.generateFurnitureSprite('furn_bookshelf', 64, 48, 0x2a2a3a, 'bookshelf');
         this.generateFurnitureSprite('furn_photo', 48, 48, 0xffffdd, 'photo');
 
-        // Generic
+        /* Generic */
         this.generateFurnitureSprite('furn_generic', 32, 32, 0x555555, 'box');
     }
 
@@ -145,63 +145,63 @@ export class BootScene extends Phaser.Scene {
     private generateFurnitureSprite(key: string, width: number, height: number, color: number, type: string): void {
         const graphics = this.make.graphics({});
 
-        // Base
+        /* Base */
         graphics.fillStyle(color, 1);
         graphics.fillRect(0, 0, width, height);
         graphics.lineStyle(2, this.darkenColor(color, 0.7));
         graphics.strokeRect(0, 0, width, height);
 
-        // Details based on type
+        /* Details based on type */
         switch (type) {
             case 'bed':
-                graphics.fillStyle(0xffffff, 1); // Pillow
+                graphics.fillStyle(0xffffff, 1); /* Pillow */
                 graphics.fillRect(5, 5, width - 10, 15);
-                graphics.fillStyle(this.darkenColor(color, 1.2), 1); // Blanket
+                graphics.fillStyle(this.darkenColor(color, 1.2), 1); /* Blanket */
                 graphics.fillRect(2, 25, width - 4, height - 27);
                 break;
             case 'tv':
-                graphics.fillStyle(0x000000, 1); // Screen
+                graphics.fillStyle(0x000000, 1); /* Screen */
                 graphics.fillRect(4, 4, width - 8, height - 12);
-                graphics.fillStyle(0xff0000, 1); // Power LED
+                graphics.fillStyle(0xff0000, 1); /* Power LED */
                 graphics.fillRect(width - 8, height - 6, 4, 4);
                 break;
             case 'table':
                 graphics.fillStyle(this.darkenColor(color, 1.1), 1);
-                graphics.fillRect(5, 5, width - 10, height - 10); // Surface highlight
+                graphics.fillRect(5, 5, width - 10, height - 10); /* Surface highlight */
                 break;
             case 'fridge':
                 graphics.lineStyle(2, 0xaaaaaa);
                 graphics.beginPath();
                 graphics.moveTo(width / 2, 2);
-                graphics.lineTo(width / 2, height - 2); // Door split
+                graphics.lineTo(width / 2, height - 2); /* Door split */
                 graphics.stroke();
                 break;
             case 'stage':
                 graphics.fillStyle(0x220000, 0.5);
-                graphics.fillRect(10, 0, width - 20, height); // Curtain shadow
+                graphics.fillRect(10, 0, width - 20, height); /* Curtain shadow */
                 break;
             case 'mask_obj':
-                graphics.fillStyle(0x000000, 1); // Eyes
+                graphics.fillStyle(0x000000, 1); /* Eyes */
                 graphics.fillRect(15, 10, 10, 5);
                 graphics.fillRect(width - 25, 10, 10, 5);
                 break;
             case 'building':
-                graphics.fillStyle(0xffffaa, 1); // Windows
+                graphics.fillStyle(0xffffaa, 1); /* Windows */
                 for (let i = 0; i < 3; i++) {
                     graphics.fillRect(10 + i * 30, 20, 20, 30);
                 }
                 break;
             case 'bookshelf':
-                graphics.fillStyle(0xffffff, 1); // Books
+                graphics.fillStyle(0xffffff, 1); /* Books */
                 for (let i = 0; i < width - 10; i += 5) {
                     graphics.fillRect(5 + i, 10, 3, height - 20);
                 }
                 break;
             case 'photo':
                 graphics.fillStyle(0x000000, 1);
-                graphics.fillRect(5, 5, width - 10, height - 10); // Frame content
+                graphics.fillRect(5, 5, width - 10, height - 10); /* Frame content */
                 graphics.fillStyle(0xffffff, 1);
-                graphics.fillCircle(width / 2, height / 3, 5); // Head
+                graphics.fillCircle(width / 2, height / 3, 5); /* Head */
                 break;
         }
 
@@ -228,29 +228,29 @@ export class BootScene extends Phaser.Scene {
         const width = 16;
         const height = 24;
 
-        // Rimuovi texture esistenti
+        /* Rimuovi texture esistenti */
         if (this.textures.exists(key)) {
             this.textures.remove(key);
         }
 
-        // Crea uno sprite semplice (1 frame solo) per ora
+        /* Crea uno sprite semplice (1 frame solo) per ora */
         const graphics = this.make.graphics({});
 
-        // Disegna un personaggio semplice in idle down (frame 0)
+        /* Disegna un personaggio semplice in idle down (frame 0) */
         const baseX = 0;
         const baseY = 0;
 
-        // Corpo/Torso
+        /* Corpo/Torso */
         const shirtColor = features.shirt || this.darkenColor(features.body, 0.8);
         graphics.fillStyle(shirtColor);
         graphics.fillRect(baseX + 4, baseY + 10, 8, 7);
 
-        // Braccia
+        /* Braccia */
         graphics.fillStyle(features.body);
         graphics.fillRect(baseX + 3, baseY + 11, 2, 5);
         graphics.fillRect(baseX + 11, baseY + 11, 2, 5);
 
-        // Gambe
+        /* Gambe */
         const pantsColor = features.shirt ? this.darkenColor(features.shirt, 0.6) : this.darkenColor(features.body, 0.7);
         graphics.fillStyle(pantsColor);
         graphics.fillRect(baseX + 5, baseY + 16, 2, 5);
@@ -258,17 +258,17 @@ export class BootScene extends Phaser.Scene {
         graphics.fillRect(baseX + 5, baseY + 21, 2, 3);
         graphics.fillRect(baseX + 9, baseY + 21, 2, 3);
 
-        // Testa
+        /* Testa */
         graphics.fillStyle(features.body);
         graphics.fillRect(baseX + 5, baseY + 3, 6, 8);
         graphics.fillRect(baseX + 4, baseY + 5, 8, 4);
 
-        // Occhi (guardano verso il basso)
+        /* Occhi (guardano verso il basso) */
         graphics.fillStyle(0x000000);
         graphics.fillRect(baseX + 6, baseY + 7, 1, 2);
         graphics.fillRect(baseX + 9, baseY + 7, 1, 2);
 
-        // Capelli
+        /* Capelli */
         graphics.fillStyle(features.hair);
         switch (features.hairStyle) {
             case 'short':
@@ -296,13 +296,13 @@ export class BootScene extends Phaser.Scene {
                 break;
         }
 
-        // Barba
+        /* Barba */
         if (features.beard) {
             graphics.fillStyle(features.beard);
             graphics.fillRect(baseX + 5, baseY + 9, 6, 2);
         }
 
-        // Rossetto
+        /* Rossetto */
         if (features.lips) {
             graphics.fillStyle(features.lips);
             graphics.fillRect(baseX + 6, baseY + 9, 4, 1);

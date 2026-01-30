@@ -11,22 +11,22 @@ export class MinigameManager {
     private currentType: MinigameType | null = null;
     private onComplete: ((success: boolean) => void) | null = null;
 
-    // Shared UI
+    /* Shared UI */
     private instructionText: Phaser.GameObjects.Text;
     private timerText: Phaser.GameObjects.Text;
     private gameTimer: Phaser.Time.TimerEvent | null = null;
 
-    // QTE Props
+    /* QTE Props */
     private qteCount: number = 0;
     private qteTarget: number = 5;
 
-    // Balance Props
+    /* Balance Props */
     private balanceCursor: Phaser.GameObjects.Rectangle;
     private balanceZone: Phaser.GameObjects.Rectangle;
     private balanceValue: number = 0;
     private balanceVelocity: number = 0;
 
-    // Rhythm Props
+    /* Rhythm Props */
     private rhythmTarget: Phaser.GameObjects.Arc;
     private rhythmBeat: Phaser.GameObjects.Arc;
     private rhythmScale: number = 0;
@@ -34,23 +34,23 @@ export class MinigameManager {
     private rhythmHits: number = 0;
     private rhythmGoal: number = 3;
 
-    // Hold/Scream Props
+    /* Hold/Scream Props */
     private holdBarBg: Phaser.GameObjects.Rectangle;
     private holdBarFill: Phaser.GameObjects.Rectangle;
     private holdValue: number = 0;
     private holdDecay: number = 0.5;
 
-    // Breath Props
+    /* Breath Props */
     private breathCircleOuter: Phaser.GameObjects.Arc;
     private breathCircleInner: Phaser.GameObjects.Arc;
-    private breathPhase: number = 0; // 0 to PI*2
+    private breathPhase: number = 0; /* 0 to PI*2 */
     private breathSpeed: number = 0.002;
     private breathTargetSize: number = 100;
 
-    // Focus Props
+    /* Focus Props */
     private focusTarget: Phaser.GameObjects.Star;
     private focusCrosshair: Phaser.GameObjects.Sprite;
-    // Using rectangle/primitive
+    /* Using rectangle/primitive */
     private focusScore: number = 0;
     private focusMaxScore: number = 1000;
 
@@ -112,13 +112,13 @@ export class MinigameManager {
     }
 
     start(type: 'dodge' | 'timing' | 'mash', difficulty: number, onComplete: (success: boolean) => void): void {
-        // Mappa i tipi semplificati ai tipi di minigame interni
+        /* Mappa i tipi semplificati ai tipi di minigame interni */
         const typeMap: Record<'dodge' | 'timing' | 'mash', MinigameType> = {
-            'dodge': 'balance',    // Schivare = mantenere equilibrio
-            'timing': 'rhythm',    // Timing = premere al momento giusto
-            'mash': 'qte'          // Mashing = premere rapidamente
+            'dodge': 'balance',    /* Schivare = mantenere equilibrio */
+            'timing': 'rhythm',    /* Timing = premere al momento giusto */
+            'mash': 'qte'          /* Mashing = premere rapidamente */
         };
-        
+
         const minigameType = typeMap[type];
         this.startMinigame(minigameType, difficulty, onComplete);
     }
@@ -148,7 +148,7 @@ export class MinigameManager {
         this.focusTarget.setVisible(false);
     }
 
-    // SETUP METHODS
+    /** SETUP METHODS */
 
     private setupQTE(difficulty: number): void {
         this.qteCount = 0;
@@ -173,7 +173,7 @@ export class MinigameManager {
         this.rhythmSpeed = 0.02 + (difficulty * 0.005);
         this.rhythmScale = 0;
         this.instructionText.setText('PREMI SPAZIO QUANDO I CERCHI COMBACIANO!');
-        // No auto-win timer, win by hits
+        /* No auto-win timer, win by hits */
     }
 
     private setupHold(difficulty: number): void {
@@ -182,7 +182,7 @@ export class MinigameManager {
         this.holdValue = 0;
         this.holdDecay = 0.5 + (difficulty * 0.1);
         this.instructionText.setText('TIENI PREMUTO SPAZIO PER RIEMPIRE!');
-        this.startTimer(5000, false); // Win if bar full
+        this.startTimer(5000, false); /* Win if bar full */
     }
 
     private setupBreath(difficulty: number): void {
@@ -199,7 +199,7 @@ export class MinigameManager {
         this.focusTarget.setVisible(true);
         this.focusScore = 0;
         this.instructionText.setText('INSEGUI LA STELLA CON IL MOUSE!');
-        this.startTimer(5000, false); // Win if score high enough
+        this.startTimer(5000, false); /* Win if score high enough */
     }
 
     private startTimer(duration: number, winOnTimeout: boolean): void {
@@ -210,7 +210,7 @@ export class MinigameManager {
         });
     }
 
-    // --- UPDATE ---
+    /** UPDATE LOOP */
 
     update(time: number, delta: number): void {
         if (!this.isActive) return;
@@ -251,20 +251,20 @@ export class MinigameManager {
         this.rhythmScale += this.rhythmSpeed * delta * 0.1;
         if (this.rhythmScale > 2) this.rhythmScale = 0;
 
-        const scale = 1 + Math.sin(this.rhythmScale); // Oscillate
+        const scale = 1 + Math.sin(this.rhythmScale); /* Oscillate */
         this.rhythmBeat.setScale(scale);
 
         this.rhythmBeat.radius += this.rhythmSpeed * delta * 20;
-        if (this.rhythmBeat.radius > 70) this.rhythmBeat.radius = 0; // Reset loop
+        if (this.rhythmBeat.radius > 70) this.rhythmBeat.radius = 0; /* Reset loop */
 
         if (Phaser.Input.Keyboard.JustDown(this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE))) {
-            // Check overlap
-            const diff = Math.abs(this.rhythmBeat.radius - 50); // 50 is target radius
+            /* Check overlap */
+            const diff = Math.abs(this.rhythmBeat.radius - 50); /* 50 is target radius */
             if (diff < 10) {
                 this.rhythmHits++;
                 this.instructionText.setText(`RITMO! ${this.rhythmHits}/${this.rhythmGoal}`);
                 this.scene.cameras.main.flash(100, 0, 255, 0);
-                this.rhythmBeat.radius = 0; // Reset immediately on hit
+                this.rhythmBeat.radius = 0; /* Reset immediately on hit */
                 if (this.rhythmHits >= this.rhythmGoal) this.endMinigame(true);
             } else {
                 this.scene.cameras.main.shake(100, 0.01);
@@ -286,10 +286,10 @@ export class MinigameManager {
 
     private updateBreath(time: number, delta: number): void {
         this.breathPhase += this.breathSpeed * delta;
-        const scale = 1 + Math.sin(this.breathPhase) * 0.5; // 0.5 to 1.5
+        const scale = 1 + Math.sin(this.breathPhase) * 0.5; /* 0.5 to 1.5 */
         this.breathCircleInner.setScale(scale);
 
-        // Visual guide: Target zone is "middle" (scale ~ 1.0)
+        /* Visual guide: Target zone is "middle" (scale ~ 1.0) */
         if (scale > 0.9 && scale < 1.1) {
             this.breathCircleInner.setFillStyle(0x00ff00);
         } else {
@@ -301,21 +301,21 @@ export class MinigameManager {
                 this.scene.cameras.main.flash(100, 0, 255, 255);
             } else {
                 this.scene.cameras.main.shake(100, 0.01);
-                this.endMinigame(false); // Fail on bad breath
+                this.endMinigame(false); /* Fail on bad breath */
             }
         }
     }
 
     private updateFocus(delta: number): void {
-        // Move Star Randomly
+        /* Move Star Randomly */
         this.focusTarget.x += (Math.random() - 0.5) * 10;
         this.focusTarget.y += (Math.random() - 0.5) * 10;
 
-        // Clamp to screen
+        /* Clamp to screen */
         this.focusTarget.x = Phaser.Math.Clamp(this.focusTarget.x, 100, GAME_WIDTH - 100);
         this.focusTarget.y = Phaser.Math.Clamp(this.focusTarget.y, 100, GAME_HEIGHT - 100);
 
-        // Mouse Tracking
+        /* Mouse Tracking */
         const pointer = this.scene.input.activePointer;
         const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.focusTarget.x, this.focusTarget.y);
 
@@ -329,7 +329,7 @@ export class MinigameManager {
         if (this.focusScore >= this.focusMaxScore) this.endMinigame(true);
     }
 
-    // --- UTILS ---
+    /** UTILS */
 
     private hideBalanceUI(): void {
         this.balanceZone.setVisible(false);
@@ -347,11 +347,11 @@ export class MinigameManager {
         this.container.setVisible(false);
 
         if (success) {
-            // Adjust Mask Score based on type CATEGORY
+            /* Adjust Mask Score based on type CATEGORY */
             if (['qte', 'rhythm', 'hold'].includes(this.currentType!)) {
-                MaskSystem.getInstance().modifyScore(1); // Anger/Mask
+                MaskSystem.getInstance().modifyScore(1); /* Anger/Mask */
             } else {
-                MaskSystem.getInstance().modifyScore(-1); // Control/Calm
+                MaskSystem.getInstance().modifyScore(-1); /* Control/Calm */
             }
         }
 
