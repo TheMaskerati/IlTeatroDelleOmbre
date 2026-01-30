@@ -136,14 +136,20 @@ export class BootScene extends Phaser.Scene {
             }
         }
         
-        // Crea la texture da questo canvas
-        this.textures.addSpriteSheet(key, tempCanvas, {
-            frameWidth: width,
-            frameHeight: height
-        });
+        // Crea la texture dal canvas usando Base64
+        const dataUrl = tempCanvas.toDataURL();
+        const img = new Image();
+        img.src = dataUrl;
         
-        // Crea animazioni
-        this.createCharacterAnims(key);
+        img.onload = () => {
+            this.textures.addSpriteSheet(key, img, {
+                frameWidth: width,
+                frameHeight: height
+            });
+            
+            // Crea animazioni dopo che la texture è caricata
+            this.createCharacterAnims(key);
+        };
     }
 
     private drawLegs(ctx: CanvasRenderingContext2D, baseX: number, baseY: number, frame: number, color: number, shirtColor?: number): void {
