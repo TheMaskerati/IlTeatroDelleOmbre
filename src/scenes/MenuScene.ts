@@ -118,9 +118,15 @@ export class MenuScene extends BaseScene {
             this.createButton(GAME_WIDTH / 2, buttonY + 120, 'IMPOSTAZIONI', () => {
                 this.scene.launch(SCENES.SETTINGS);
             });
+            this.createButton(GAME_WIDTH / 2, buttonY + 180, 'TROFEI', () => {
+                this.scene.start(SCENES.ACHIEVEMENTS);
+            });
         } else {
             this.createButton(GAME_WIDTH / 2, buttonY + 60, 'IMPOSTAZIONI', () => {
                 this.scene.launch(SCENES.SETTINGS);
+            });
+            this.createButton(GAME_WIDTH / 2, buttonY + 120, 'TROFEI', () => {
+                this.scene.start(SCENES.ACHIEVEMENTS);
             });
         }
     }

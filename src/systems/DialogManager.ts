@@ -188,6 +188,9 @@ export class DialogManager {
         }
     }
 
+    private choiceTimer: Phaser.Time.TimerEvent | null = null;
+    private timerBar: Phaser.GameObjects.Rectangle | null = null;
+
     private showChoices(): void {
         if (!this.currentDialog?.choices) return;
 
@@ -196,6 +199,27 @@ export class DialogManager {
         this.speakerText.setText('');
         this.contentText.setText('Cosa fai?');
         this.portrait.setTexture('player_portrait');
+
+        /* Timer bar for timed choices */
+        const timerDuration = 10000;
+        this.timerBar = this.scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 130, GAME_WIDTH - 40, 8, 0xd4af37);
+        this.timerBar.setScrollFactor(0);
+        this.timerBar.setDepth(1002);
+        this.container.add(this.timerBar);
+
+        this.scene.tweens.add({
+            targets: this.timerBar,
+            scaleX: 0,
+            duration: timerDuration,
+            ease: 'Linear',
+            onComplete: () => {
+                /* Auto-select first choice on timeout */
+                if (this.choiceTexts.length > 0) {
+                    this.selectedChoice = 0;
+                    this.selectChoice();
+                }
+            }
+        });
 
         const startY = GAME_HEIGHT - 100;
         this.currentDialog.choices.forEach((choice, index) => {
@@ -229,6 +253,11 @@ export class DialogManager {
     private clearChoices(): void {
         this.choiceTexts.forEach(t => t.destroy());
         this.choiceTexts = [];
+        if (this.timerBar) {
+            this.scene.tweens.killTweensOf(this.timerBar);
+            this.timerBar.destroy();
+            this.timerBar = null;
+        }
     }
 
     private selectChoice(): DialogChoice | null {

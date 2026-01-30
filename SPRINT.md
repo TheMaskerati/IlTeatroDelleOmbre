@@ -247,7 +247,7 @@
 
 ### 11. ACHIEVEMENTS/TROFEI
 
-**Status:** Non implementato
+**Status:** [COMPLETATO]
 **Tempo stimato:** 2 giorni
 
 #### Achievements suggeriti
@@ -277,9 +277,9 @@
 
 - [ ] Difficoltà più bilanciata
 - [ ] Feedback audio/visivo più chiaro
-- [ ] Combo system (bonus per sequenze perfette)
+- [x] Combo system (bonus per sequenze perfette)
 - [ ] Classifica personale (miglior tempo/punteggio)
-- [ ] Ricompense per performance perfetta
+- [x] Ricompense per performance perfetta
 
 #### Nuovi minigame da aggiungere
 
@@ -305,7 +305,7 @@
 - Shake per rabbia
 - Bounce per gioia
 - Fade per tristezza
-- [ ] **Scelte con timer** (10 secondi per decidere)
+- [x] **Scelte con timer** (10 secondi per decidere)
 - [ ] **Memoria delle scelte** (NPC ricordano cosa hai detto)
 - [ ] **Branching più complesso** (albero decisionale profondo)
 - [ ] **Voice blips** (suoni per ogni personaggio)
