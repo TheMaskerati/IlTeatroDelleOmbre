@@ -31,7 +31,7 @@ export class GameScene extends BaseScene {
     private static tutorialDone = false;
 
     // Map Cycle per Endless Mode
-    private readonly MAP_CYCLE: MapKey[] = ['theater', 'bar', 'fatherHouse'];
+    private readonly MAP_CYCLE: MapKey[] = ['theater', 'naplesAlley', 'fatherHouse'];
 
     constructor() {
         super(SCENES.GAME);
@@ -83,7 +83,7 @@ export class GameScene extends BaseScene {
         const defaults: Record<string, { x: number; y: number }> = {
             apartment: { x: 10 * TILE_SIZE * SCALE, y: 10 * TILE_SIZE * SCALE },
             theater: { x: 5 * TILE_SIZE * SCALE, y: 20 * TILE_SIZE * SCALE },
-            bar: { x: 8 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
+            naplesAlley: { x: 8 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
             fatherHouse: { x: 12 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
         };
         return defaults[this.currentMap] || { x: 100, y: 100 };
@@ -192,28 +192,32 @@ export class GameScene extends BaseScene {
         // 1. Dialogo Pre-Encounter (Placeholder o specifico)
         const dialogId = npc.getDialogId() || 'generic_intro';
 
-        this.dialogManager.show(dialogId, () => {
-            // 2. Start Random Minigame
-            // Difficulty increases with Stage
-            const difficulty = 1.0 + (this.stage * 0.2);
+        this.dialogManager.show(dialogId, (action) => {
+            // 2. Start Random Minigame only if action dictates or boss
+            if (action === 'start_minigame' || action?.includes('battle') || npc.isBoss()) {
+                // Difficulty increases with Stage
+                const difficulty = 1.0 + (this.stage * 0.2);
 
-            MaskSystem.getInstance().updateTask(`SCONFIGGI ${npc.getName().toUpperCase()}`);
+                MaskSystem.getInstance().updateTask(`SCONFIGGI ${npc.getName().toUpperCase()}`);
 
-            this.minigameManager.startRandom(difficulty, (success) => {
-                // 3. Post Minigame
-                if (success) {
-                    this.dialogManager.show('minigame_win', () => {
-                        this.player.unfreeze();
-                        // NPC Defeated? Disappear?
-                        npc.setDefeated(true);
-                        MaskSystem.getInstance().updateTask('TROVA L\'USCITA');
-                    });
-                } else {
-                    this.dialogManager.show('minigame_loss', () => {
-                        this.player.unfreeze();
-                    });
-                }
-            });
+                this.minigameManager.startRandom(difficulty, (success) => {
+                    // 3. Post Minigame
+                    if (success) {
+                        this.dialogManager.show('minigame_win', () => {
+                            this.player.unfreeze();
+                            // NPC Defeated? Disappear?
+                            npc.setDefeated(true);
+                            MaskSystem.getInstance().updateTask('TROVA L\'USCITA');
+                        });
+                    } else {
+                        this.dialogManager.show('minigame_loss', () => {
+                            this.player.unfreeze();
+                        });
+                    }
+                });
+            } else {
+                this.player.unfreeze();
+            }
         });
     }
 

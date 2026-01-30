@@ -20,7 +20,7 @@ export class DialogManager {
     private fullText = '';
     private selectedChoice = 0;
     private typewriterEvent: Phaser.Time.TimerEvent | null = null;
-    private onComplete: (() => void) | null = null;
+    private onComplete: ((action?: string) => void) | null = null;
 
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
@@ -92,7 +92,7 @@ export class DialogManager {
         ]);
     }
 
-    show(dialogId: string, onComplete?: () => void): void {
+    show(dialogId: string, onComplete?: (action?: string) => void): void {
         this.currentDialog = DIALOGS[dialogId];
         if (!this.currentDialog) {
             console.error(`Dialog not found: ${dialogId}`);
@@ -220,13 +220,14 @@ export class DialogManager {
             return choice;
         }
 
-        this.complete();
+        this.complete(choice.action);
         return choice;
     }
 
-    private complete(): void {
+    private complete(action?: string): void {
+        const finalAction = action || this.currentDialog?.onComplete;
         this.hide();
-        this.onComplete?.();
+        this.onComplete?.(finalAction);
     }
 
     handleInput(keys: Record<string, Phaser.Input.Keyboard.Key>): DialogChoice | null {

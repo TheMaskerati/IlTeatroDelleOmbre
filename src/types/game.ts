@@ -15,8 +15,7 @@ export type MapKey =
     | 'apartment'
     | 'theater'
     | 'fatherHouse'
-    | 'naplesAlley'
-    | 'bar';
+    | 'naplesAlley';
 
 export interface SaveData {
     highScore: number;
