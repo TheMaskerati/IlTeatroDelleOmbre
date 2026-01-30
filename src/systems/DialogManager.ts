@@ -66,7 +66,7 @@ export class DialogManager {
         this.continuePrompt = this.scene.add.text(
             GAME_WIDTH - 40,
             boxY + boxHeight / 2 - 25,
-            '[SPAZIO]',
+            '[SPAZIO] continua',
             {
                 fontFamily: 'monospace',
                 fontSize: '12px',
@@ -167,7 +167,8 @@ export class DialogManager {
     private showChoices(): void {
         if (!this.currentDialog?.choices) return;
 
-        this.continuePrompt.setVisible(false);
+        this.continuePrompt.setVisible(true);
+        this.continuePrompt.setText('[INVIO] conferma');
         this.speakerText.setText('');
         this.contentText.setText('Cosa fai?');
         this.portrait.setFillStyle(COLORS.cream);
@@ -230,10 +231,7 @@ export class DialogManager {
     handleInput(keys: Record<string, Phaser.Input.Keyboard.Key>): DialogChoice | null {
         if (!this.container.visible) return null;
 
-        const actionPressed =
-            Phaser.Input.Keyboard.JustDown(keys.SPACE) ||
-            Phaser.Input.Keyboard.JustDown(keys.ENTER);
-
+        // Quando ci sono scelte, solo INVIO può confermare
         if (this.choiceTexts.length > 0) {
             if (Phaser.Input.Keyboard.JustDown(keys.UP) || Phaser.Input.Keyboard.JustDown(keys.W)) {
                 this.selectedChoice = Math.max(0, this.selectedChoice - 1);
@@ -246,13 +244,15 @@ export class DialogManager {
                 );
                 this.updateChoiceSelection();
             }
-            if (actionPressed) {
+            // Solo INVIO conferma la scelta
+            if (Phaser.Input.Keyboard.JustDown(keys.ENTER)) {
                 return this.selectChoice();
             }
             return null;
         }
 
-        if (actionPressed) {
+        // Durante i dialoghi, solo SPAZIO avanza/skippa
+        if (Phaser.Input.Keyboard.JustDown(keys.SPACE)) {
             if (this.isTyping) {
                 this.typewriterEvent?.destroy();
                 this.displayedText = this.fullText;
