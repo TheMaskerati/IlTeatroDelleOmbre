@@ -1,36 +1,72 @@
-import Phaser from 'phaser';
 import { SCENES, COLORS, GAME_WIDTH, GAME_HEIGHT } from '@/config/gameConfig';
 import { ErrorHandler } from '@/systems/ErrorHandler';
+import { SaveSystem } from '@/systems/SaveSystem';
 
 /**
  * Boot Scene
  * Handles asset preloading, including procedural generation of sprites and tiles.
+ * Rewritten to use synchronous CanvasTexture generation to prevent crashes.
  */
 export class BootScene extends Phaser.Scene {
     constructor() {
         super(SCENES.BOOT);
     }
 
+    /**
+     * Clean up textures when shutting down to prevent memory leaks.
+     */
+    shutdown(): void {
+        this.textures.each((texture: Phaser.Textures.Texture) => {
+            if (texture.key.startsWith('furn_') || texture.key.startsWith('tile_')) {
+                texture.destroy();
+            }
+        }, this);
+    }
+
     preload(): void {
         ErrorHandler.initialize(this);
         this.createLoadingBar();
 
-        /* Audio files are not included in this prototype.
-           Audio loading is disabled to prevent errors.
-           In production, uncomment and provide actual audio files.
-
-        this.load.audio('bgm_apartment', 'audio/bgm/apartment.mp3');
-        this.load.audio('bgm_theater', 'audio/bgm/theater.mp3');
-        this.load.audio('bgm_naplesAlley', 'audio/bgm/alley.mp3');
-        this.load.audio('bgm_fatherHouse', 'audio/bgm/house.mp3');
-        this.load.audio('sfx_click', 'audio/sfx/click.mp3');
-        this.load.audio('sfx_interact', 'audio/sfx/interact.mp3');
-        */
+        /* Audio loading is disabled for prototype stability. */
 
         this.load.on('complete', () => {
-            this.generatePlaceholderAssets();
+            /* Defer generation slightly to ensure scene is fully ready */
+            this.time.delayedCall(100, () => {
+                this.generatePlaceholderAssets();
+
+                /* Apply generic settings */
+                const settings = SaveSystem.getSettings();
+                if (settings.fullscreen && !this.scale.isFullscreen) {
+                    /* Note: Browser may block this without user interaction,
+                       but Electron usually allows it. */
+                    this.scale.startFullscreen();
+                }
+
+                this.startGame();
+            });
         });
         this.load.start();
+    }
+
+    private startGame(): void {
+        const loadingText = this.add.text(
+            GAME_WIDTH / 2,
+            GAME_HEIGHT / 2 + 50,
+            'Caricamento completato...',
+            {
+                fontFamily: 'monospace',
+                fontSize: '16px',
+                color: '#ffffff',
+            }
+        );
+        loadingText.setOrigin(0.5);
+
+        this.time.delayedCall(500, () => {
+            this.cameras.main.fadeOut(300, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                this.scene.start(SCENES.MENU);
+            });
+        });
     }
 
     /**
@@ -66,10 +102,10 @@ export class BootScene extends Phaser.Scene {
 
     /**
      * Generates all procedural assets for characters, furniture, and tiles.
-     * This replaces static asset loading for prototyping/visual style.
+     * Uses CanvasTextures directly for rock-solid stability.
      */
     private generatePlaceholderAssets(): void {
-        /* Genera personaggi con diverse caratteristiche */
+        /* Characters */
         this.generateCharacterAssets('player', {
             body: 0xe0d5c0,
             hair: 0x4a3728,
@@ -105,14 +141,12 @@ export class BootScene extends Phaser.Scene {
             shirt: 0x444444
         });
 
+        /* Furniture & Environment */
         this.generateSprite('mask', 16, 16, 0xf5f5dc);
         this.generateFurnitureAssets();
         this.generateTileset();
     }
 
-    /**
-     * Generates textures for map furniture/objects based on type.
-     */
     private generateFurnitureAssets(): void {
         /* Apartment */
         this.generateFurnitureSprite('furn_bed', 80, 64, 0x654321, 'bed');
@@ -127,7 +161,7 @@ export class BootScene extends Phaser.Scene {
         /* Alley */
         this.generateFurnitureSprite('furn_building', 128, 96, 0x4a4a4a, 'building');
         this.generateFurnitureSprite('furn_wall', 96, 128, 0x3a3a3a, 'wall');
-        this.generateFurnitureSprite('furn_bench', 64, 64, 0x2a4a2a, 'bench');
+        this.generateFurnitureSprite('furn_bench', 96, 48, 0x8b5a2b, 'bench');
         this.generateFurnitureSprite('furn_shop', 80, 64, 0x5a3a2a, 'shop');
 
         /* House */
@@ -139,143 +173,105 @@ export class BootScene extends Phaser.Scene {
         this.generateFurnitureSprite('furn_generic', 32, 32, 0x555555, 'box');
     }
 
-    /**
-     * Helper to draw a furniture item onto a texture.
-     * @param key Texture key
-     * @param width Width in pixels
-     * @param height Height in pixels
-     * @param color Base color
-     * @param type Furniture type descriptor
-     */
-    private generateFurnitureSprite(key: string, width: number, height: number, color: number, type: string): void {
-        const graphics = this.make.graphics({});
-
-        /* Base */
-        graphics.fillStyle(color, 1);
-        graphics.fillRect(0, 0, width, height);
-        graphics.lineStyle(2, this.darkenColor(color, 0.7));
-        graphics.strokeRect(0, 0, width, height);
-
-        /* Details based on type */
-        switch (type) {
-            case 'bed':
-                graphics.fillStyle(0xffffff, 1); /* Pillow */
-                graphics.fillRect(5, 5, width - 10, 15);
-                graphics.fillStyle(this.darkenColor(color, 1.2), 1); /* Blanket */
-                graphics.fillRect(2, 25, width - 4, height - 27);
-                break;
-            case 'tv':
-                graphics.fillStyle(0x000000, 1); /* Screen */
-                graphics.fillRect(4, 4, width - 8, height - 12);
-                graphics.fillStyle(0xff0000, 1); /* Power LED */
-                graphics.fillRect(width - 8, height - 6, 4, 4);
-                break;
-            case 'table':
-                graphics.fillStyle(this.darkenColor(color, 1.1), 1);
-                graphics.fillRect(5, 5, width - 10, height - 10); /* Surface highlight */
-                break;
-            case 'fridge':
-                graphics.lineStyle(2, 0xaaaaaa);
-                graphics.beginPath();
-                graphics.moveTo(width / 2, 2);
-                graphics.lineTo(width / 2, height - 2); /* Door split */
-                graphics.stroke();
-                break;
-            case 'stage':
-                graphics.fillStyle(0x220000, 0.5);
-                graphics.fillRect(10, 0, width - 20, height); /* Curtain shadow */
-                break;
-            case 'mask_obj':
-                graphics.fillStyle(0x000000, 1); /* Eyes */
-                graphics.fillRect(15, 10, 10, 5);
-                graphics.fillRect(width - 25, 10, 10, 5);
-                break;
-            case 'building':
-                graphics.fillStyle(0xffffaa, 1); /* Windows */
-                for (let i = 0; i < 3; i++) {
-                    graphics.fillRect(10 + i * 30, 20, 20, 30);
-                }
-                break;
-            case 'bookshelf':
-                graphics.fillStyle(0xffffff, 1); /* Books */
-                for (let i = 0; i < width - 10; i += 5) {
-                    graphics.fillRect(5 + i, 10, 3, height - 20);
-                }
-                break;
-            case 'photo':
-                graphics.fillStyle(0x000000, 1);
-                graphics.fillRect(5, 5, width - 10, height - 10); /* Frame content */
-                graphics.fillStyle(0xffffff, 1);
-                graphics.fillCircle(width / 2, height / 3, 5); /* Head */
-                break;
-        }
-
-        graphics.generateTexture(key, width, height);
-        graphics.destroy();
-    }
+    /* -------------------------------------------------------------------------- */
+    /*                         ROBUST TEXTURE GENERATION                          */
+    /* -------------------------------------------------------------------------- */
 
     /**
-     * Procedurally generates a character sprite sheet.
-     * @param key Texture key
-     * @param features Configuration for character appearance (colors, hair style, etc.)
+     * Generates a sprite sheet for a character using direct Canvas drawing.
+     * This avoids async issues with Phaser Graphics.
      */
-    /**
-     * Procedurally generates a character sprite sheet and portrait.
-     * @param key Base texture key
-     * @param features Configuration for character appearance
-     */
-    private generateCharacterAssets(
-        key: string,
-        features: {
-            body: number;
-            hair: number;
-            hairStyle: 'short' | 'long' | 'messy' | 'bald' | 'hood';
-            beard?: number;
-            lips?: number;
-            shirt?: number;
-        }
-    ): void {
+    private generateCharacterAssets(key: string, features: any): void {
         this.generateCharacterSprite(key, features);
         this.generateCharacterPortrait(`${key}_portrait`, features);
     }
 
-    private generateCharacterSprite(
-        key: string,
-        features: any
-    ): void {
+    private generateCharacterSprite(key: string, features: any): void {
         const frameW = 16;
         const frameH = 24;
-        const cols = 3; /* Idle, Walk1, Walk2 */
-        const rows = 4; /* Down, Up, Left, Right */
+        const cols = 3;
+        const rows = 4;
 
-        if (this.textures.exists(key)) this.textures.remove(key);
+        /* Remove existing animations for this key to prevent stale frame references */
+        for (let row = 0; row < rows; row++) {
+            const dir = ['down', 'up', 'left', 'right'][row];
+            if (this.anims.exists(`${key}_idle_${dir}`)) this.anims.remove(`${key}_idle_${dir}`);
+            if (this.anims.exists(`${key}_walk_${dir}`)) this.anims.remove(`${key}_walk_${dir}`);
+        }
 
-        const graphics = this.make.graphics({ x: 0, y: 0 });
+        /* Create Canvas Texture safely */
+        let texture = this.textures.get(key);
 
+        if (texture && texture.key !== '__MISSING') {
+            this.textures.remove(key);
+        }
+
+        /* Double check if removal worked, if not, try to use it */
+        if (this.textures.exists(key)) {
+            texture = this.textures.get(key);
+            if (!(texture instanceof Phaser.Textures.CanvasTexture)) {
+                console.warn(`Texture ${key} exists but is not CanvasTexture. Forcing destroy.`);
+                texture.destroy();
+                texture = this.textures.createCanvas(key, frameW * cols, frameH * rows);
+            }
+        } else {
+            texture = this.textures.createCanvas(key, frameW * cols, frameH * rows);
+        }
+
+        if (!texture) {
+            console.error(`CRITICAL: Failed to create or retrieve texture ${key}`);
+            return;
+        }
+
+        const source = texture.getSourceImage() as HTMLCanvasElement;
+        if (!source) {
+            console.error(`CRITICAL: Texture ${key} has no source image`);
+            return;
+        }
+
+        const ctx = source.getContext('2d');
+        if (!ctx) {
+            console.error(`Failed to get context for ${key}`);
+            return;
+        }
+
+        /* 2. Draw Frames Synchronously */
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const x = col * frameW;
                 const y = row * frameH;
                 const isWalk = col > 0;
                 const walkPhase = col === 1 ? 1 : -1;
-                const direction: 'down' | 'up' | 'left' | 'right' = ['down', 'up', 'left', 'right'][row] as any;
+                /* Calc direction */
+                let dir: 'down' | 'up' | 'left' | 'right' = 'down';
+                if (row === 1) dir = 'up';
+                if (row === 2) dir = 'left';
+                if (row === 3) dir = 'right';
 
-                this.drawCharacterFrame(graphics, x, y, features, direction, isWalk ? walkPhase : 0);
+                this.drawCharacterFrameContext(ctx, x, y, features, dir, isWalk ? walkPhase : 0);
             }
         }
 
-        graphics.generateTexture(key, frameW * cols, frameH * rows);
-        graphics.destroy();
+        /* 3. Upload to GPU */
+        if (texture instanceof Phaser.Textures.CanvasTexture) {
+            texture.refresh();
+        }
 
-        /* Define frames */
-        const tex = this.textures.get(key);
+        /* 4. Define Frames & Animations */
         for (let row = 0; row < rows; row++) {
-            const dir = ['down', 'up', 'left', 'right'][row];
-            tex.add(`${dir}_idle`, 0, 0, row * frameH, frameW, frameH);
-            tex.add(`${dir}_walk1`, 0, 1 * frameW, row * frameH, frameW, frameH);
-            tex.add(`${dir}_walk2`, 0, 2 * frameW, row * frameH, frameW, frameH);
+            let dir = 'down';
+            if (row === 1) dir = 'up';
+            if (row === 2) dir = 'left';
+            if (row === 3) dir = 'right';
 
-            /* Animations - only create if they don't exist */
+            const addFrame = (name: string, x: number, y: number) => {
+                if (!texture.has(name)) texture.add(name, 0, x, y, frameW, frameH);
+            };
+
+            addFrame(`${dir}_idle`, 0, row * frameH);
+            addFrame(`${dir}_walk1`, frameW, row * frameH);
+            addFrame(`${dir}_walk2`, frameW * 2, row * frameH);
+
             const idleKey = `${key}_idle_${dir}`;
             const walkKey = `${key}_walk_${dir}`;
 
@@ -286,7 +282,6 @@ export class BootScene extends Phaser.Scene {
                     frameRate: 1
                 });
             }
-
             if (!this.anims.exists(walkKey)) {
                 this.anims.create({
                     key: walkKey,
@@ -303,185 +298,280 @@ export class BootScene extends Phaser.Scene {
         }
     }
 
-    private drawCharacterFrame(
-        g: Phaser.GameObjects.Graphics,
+    private drawCharacterFrameContext(
+        ctx: CanvasRenderingContext2D,
         x: number,
         y: number,
         f: any,
         dir: 'down' | 'up' | 'left' | 'right',
-        walk: number /* 0: idle, 1: left foot, -1: right foot */
+        walk: number
     ): void {
-        const shirtColor = f.shirt || this.darkenColor(f.body, 0.8);
-        const pantsColor = f.shirt ? this.darkenColor(f.shirt, 0.6) : this.darkenColor(f.body, 0.7);
+        const shirtColor = this.hexToCSS(f.shirt || this.darkenColorInt(f.body, 0.8));
+        const pantsColor = this.hexToCSS(f.shirt ? this.darkenColorInt(f.shirt, 0.6) : this.darkenColorInt(f.body, 0.7));
+        const bodyColor = this.hexToCSS(f.body);
+        const hairColor = this.hexToCSS(f.hair);
 
         /* Torso */
-        g.fillStyle(shirtColor);
-        g.fillRect(x + 4, y + 10, 8, 7);
+        ctx.fillStyle = shirtColor;
+        ctx.fillRect(x + 4, y + 10, 8, 7);
 
         /* Legs */
-        g.fillStyle(pantsColor);
+        ctx.fillStyle = pantsColor;
         const legY = y + 17;
         const leftLegH = 6 + (walk > 0 ? -2 : 0);
         const rightLegH = 6 + (walk < 0 ? -2 : 0);
-        g.fillRect(x + 5, legY, 2, leftLegH);
-        g.fillRect(x + 9, legY, 2, rightLegH);
-
-        /* Arms */
-        g.fillStyle(f.body);
-        const armY = y + 11;
-        if (dir === 'down' || dir === 'up') {
-            const armOffset = walk * 2;
-            g.fillRect(x + 2, armY + (walk > 0 ? 2 : 0), 2, 5);
-            g.fillRect(x + 12, armY + (walk < 0 ? 2 : 0), 2, 5);
-        } else if (dir === 'left') {
-            g.fillRect(x + 6, armY, 2, 5);
-        } else {
-            g.fillRect(x + 8, armY, 2, 5);
-        }
+        ctx.fillRect(x + 5, legY, 2, leftLegH);
+        ctx.fillRect(x + 9, legY, 2, rightLegH);
 
         /* Head */
-        g.fillStyle(f.body);
-        g.fillRect(x + 5, y + 3, 6, 8);
-        g.fillRect(x + 4, y + 5, 8, 4);
+        ctx.fillStyle = bodyColor;
+        ctx.fillRect(x + 4, y + 2, 8, 8);
 
-        /* Face details */
-        if (dir !== 'up') {
-            const eyeX = dir === 'left' ? 5 : (dir === 'right' ? 10 : 6);
-            const eyeGap = dir === 'down' ? 3 : 0;
-            g.fillStyle(0x000000);
-            g.fillRect(x + eyeX, y + 7, 1, 2);
-            if (dir === 'down') g.fillRect(x + eyeX + eyeGap, y + 7, 1, 2);
+        /* Features based on direction */
+        if (dir === 'down' || dir === 'left' || dir === 'right') {
+            /* Face */
+            if (f.beard) {
+                ctx.fillStyle = this.hexToCSS(this.darkenColorInt(f.hair, 0.9));
+                ctx.fillRect(x + 5, y + 7, 6, 3);
+            }
+        }
 
-            if (f.lips) {
-                g.fillStyle(f.lips);
-                g.fillRect(x + (dir === 'left' ? 5 : (dir === 'right' ? 9 : 6)), y + 10, dir === 'down' ? 4 : 2, 1);
-            }
-            if (f.beard && dir === 'down') {
-                g.fillStyle(f.beard);
-                g.fillRect(x + 5, y + 10, 6, 2);
-            }
+        /* Arms */
+        ctx.fillStyle = shirtColor;
+        const armY = y + 11;
+        if (dir === 'down') {
+            ctx.fillRect(x + 2, armY + (walk * 2), 2, 6);
+            ctx.fillRect(x + 12, armY - (walk * 2), 2, 6);
+        } else if (dir === 'up') {
+            ctx.fillRect(x + 2, armY - (walk * 2), 2, 6);
+            ctx.fillRect(x + 12, armY + (walk * 2), 2, 6);
+        } else if (dir === 'left') {
+            ctx.fillRect(x + 6, armY, 4, 6);
+        } else if (dir === 'right') {
+            ctx.fillRect(x + 6, armY, 4, 6);
         }
 
         /* Hair */
-        g.fillStyle(f.hair);
-        switch (f.hairStyle) {
-            case 'short':
-                g.fillRect(x + 4, y + 3, 8, 3);
-                break;
-            case 'long':
-                g.fillRect(x + 4, y + 2, 8, 4);
-                g.fillRect(x + (dir === 'right' ? 5 : 3), y + 4, 2, 6);
-                g.fillRect(x + (dir === 'left' ? 9 : 11), y + 4, 2, 6);
-                break;
-            case 'messy':
-                g.fillRect(x + 4, y + 2, 8, 4);
-                for (let i = 0; i < 4; i++) g.fillRect(x + 4 + i * 2, y + 1, 1, 2);
-                break;
-            case 'hood':
-                g.fillStyle(shirtColor);
-                g.fillRect(x + 3, y + 2, 10, 9);
-                break;
+        ctx.fillStyle = hairColor;
+        if (f.hairStyle !== 'bald') {
+            ctx.fillRect(x + 3, y, 10, 3);
+            if (dir !== 'up') ctx.fillRect(x + 2, y + 1, 2, 4);
+            if (dir !== 'up') ctx.fillRect(x + 12, y + 1, 2, 4);
+
+            if (f.hairStyle === 'long') {
+                ctx.fillRect(x + 2, y + 3, 12, 6);
+            }
         }
     }
 
     private generateCharacterPortrait(key: string, f: any): void {
         const size = 64;
         if (this.textures.exists(key)) this.textures.remove(key);
-        const g = this.make.graphics({ x: 0, y: 0 });
+
+        const texture = this.textures.createCanvas(key, size, size);
+        const source = texture.getSourceImage() as HTMLCanvasElement;
+        const ctx = source.getContext('2d');
+        if (!ctx) return;
 
         /* BG Circle */
-        g.fillStyle(0x333333, 0.8);
-        g.fillCircle(size / 2, size / 2, size / 2 - 2);
-        g.lineStyle(2, 0xd4af37);
-        g.strokeCircle(size / 2, size / 2, size / 2 - 2);
+        ctx.fillStyle = 'rgba(51, 51, 51, 0.8)';
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
         /* Face */
-        g.fillStyle(f.body);
-        g.fillEllipse(size / 2, size / 2 + 5, 20, 25);
+        ctx.fillStyle = this.hexToCSS(f.body);
+        ctx.beginPath();
+        ctx.ellipse(size / 2, size / 2 + 5, 20, 25, 0, 0, Math.PI * 2);
+        ctx.fill();
 
         /* Eyes */
-        g.fillStyle(0x000000);
-        g.fillCircle(size / 2 - 8, size / 2, 2);
-        g.fillCircle(size / 2 + 8, size / 2, 2);
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(size / 2 - 8, size / 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(size / 2 + 8, size / 2, 2, 0, Math.PI * 2);
+        ctx.fill();
 
         /* Hair */
-        g.fillStyle(f.hair);
+        ctx.fillStyle = this.hexToCSS(f.hair);
         if (f.hairStyle === 'long') {
-            g.fillEllipse(size / 2, size / 2 - 10, 25, 15);
-            g.fillRect(size / 2 - 25, size / 2 - 5, 50, 30);
+            ctx.beginPath();
+            ctx.ellipse(size / 2, size / 2 - 10, 25, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(size / 2 - 25, size / 2 - 5, 50, 30);
         } else if (f.hairStyle === 'short' || f.hairStyle === 'messy') {
-            g.fillEllipse(size / 2, size / 2 - 15, 22, 12);
+            ctx.beginPath();
+            ctx.ellipse(size / 2, size / 2 - 15, 22, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
         } else if (f.hairStyle === 'hood') {
-            g.fillStyle(f.shirt || this.darkenColor(f.body, 0.8));
-            g.strokeEllipse(size / 2, size / 2 + 2, 25, 30);
+            ctx.strokeStyle = this.hexToCSS(f.shirt || this.darkenColorInt(f.body, 0.8));
+            ctx.beginPath();
+            ctx.ellipse(size / 2, size / 2 + 2, 25, 30, 0, 0, Math.PI * 2);
+            ctx.stroke();
         }
 
         if (f.lips) {
-            g.fillStyle(f.lips);
-            g.fillRect(size / 2 - 5, size / 2 + 15, 10, 2);
+            ctx.fillStyle = this.hexToCSS(f.lips);
+            ctx.fillRect(size / 2 - 5, size / 2 + 15, 10, 2);
         }
 
-        g.generateTexture(key, size, size);
-        g.destroy();
+        texture.refresh();
     }
 
-    private darkenColor(color: number, factor: number): number {
-        const r = Math.floor(((color >> 16) & 0xff) * factor);
-        const g = Math.floor(((color >> 8) & 0xff) * factor);
-        const b = Math.floor((color & 0xff) * factor);
-        return (r << 16) | (g << 8) | b;
+    private generateFurnitureSprite(key: string, width: number, height: number, color: number, type: string): void {
+        /* Safety: Remove existing if present to avoid conflicts/leaks */
+        if (this.textures.exists(key)) this.textures.remove(key);
+
+        const texture = this.textures.createCanvas(key, width, height);
+        if (!texture) return;
+
+        const source = texture.getSourceImage() as HTMLCanvasElement;
+        const ctx = source.getContext('2d');
+        if (!ctx) return;
+
+        /* Base */
+        ctx.fillStyle = this.hexToCSS(color);
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.strokeStyle = this.hexToCSS(this.darkenColorInt(color, 0.7));
+        ctx.lineWidth = 2;
+        ctx.strokeRect(0, 0, width, height);
+
+        /* Details based on type */
+        switch (type) {
+            case 'bed':
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(5, 5, width - 10, 15); /* Pillow */
+                ctx.fillStyle = this.hexToCSS(this.darkenColorInt(color, 1.2));
+                ctx.fillRect(2, 25, width - 4, height - 27); /* Blanket */
+                break;
+            case 'tv':
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(4, 4, width - 8, height - 12);
+                ctx.fillStyle = '#171212ff';
+                ctx.fillRect(width - 8, height - 6, 4, 4);
+                break;
+            case 'table':
+                ctx.fillStyle = this.hexToCSS(this.darkenColorInt(color, 1.1));
+                ctx.fillRect(5, 5, width - 10, height - 10);
+                break;
+            case 'fridge':
+                ctx.strokeStyle = '#aaaaaa';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(width / 2, 2);
+                ctx.lineTo(width / 2, height - 2);
+                ctx.stroke();
+                break;
+            case 'stage':
+                ctx.fillStyle = 'rgba(34, 0, 0, 0.5)';
+                ctx.fillRect(10, 0, width - 20, height);
+                break;
+            case 'mask_obj':
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(15, 10, 10, 5);
+                ctx.fillRect(width - 25, 10, 10, 5);
+                break;
+            case 'building':
+                ctx.fillStyle = '#ffffaa';
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillRect(10 + i * 30, 20, 20, 30);
+                }
+                break;
+            case 'bookshelf':
+                ctx.fillStyle = '#ffffff';
+                for (let i = 0; i < width - 10; i += 5) {
+                    ctx.fillRect(5 + i, 10, 3, height - 20);
+                }
+                break;
+            case 'photo':
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(5, 5, width - 10, height - 10);
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(width / 2, height / 3, 5, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+            case 'bench':
+                /* Wood Texture Effect */
+                ctx.fillStyle = '#6b4423';
+                ctx.fillRect(0, 0, width, height);
+                /* Slats */
+                ctx.fillStyle = '#5a3a1a';
+                for (let i = 0; i < width; i += 10) {
+                    ctx.fillRect(i, 0, 2, height);
+                }
+                /* Legs */
+                ctx.fillStyle = '#3a2a1a';
+                ctx.fillRect(5, height - 10, 8, 10);
+                ctx.fillRect(width - 13, height - 10, 8, 10);
+                break;
+        }
+
+        texture.refresh();
     }
 
     private generateSprite(key: string, width: number, height: number, color: number): void {
-        const graphics = this.make.graphics({});
-        graphics.fillStyle(color, 1);
-        graphics.fillRect(0, 0, width, height);
-        graphics.fillStyle(0x000000, 1);
-        graphics.fillRect(4, 6, 3, 3);
-        graphics.fillRect(width - 7, 6, 3, 3);
-        graphics.generateTexture(key, width, height);
-        graphics.destroy();
+        if (this.textures.exists(key)) this.textures.remove(key);
+
+        const texture = this.textures.createCanvas(key, width, height);
+        if (!texture) return;
+
+        const source = texture.getSourceImage() as HTMLCanvasElement;
+        const ctx = source.getContext('2d');
+        if (!ctx) return;
+
+        ctx.fillStyle = this.hexToCSS(color);
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(4, 6, 3, 3);
+        ctx.fillRect(width - 7, 6, 3, 3);
+
+        texture.refresh();
     }
 
     private generateTileset(): void {
-        const tileSize = 16;
-        const graphics = this.make.graphics({});
+        const tileSize = 32;
 
-        graphics.fillStyle(0x4a3728, 1);
-        graphics.fillRect(0, 0, tileSize, tileSize);
-        graphics.generateTexture('tile_floor', tileSize, tileSize);
+        const createTile = (key: string, color: number) => {
+            if (this.textures.exists(key)) this.textures.remove(key);
+            const texture = this.textures.createCanvas(key, tileSize, tileSize);
+            if (!texture) return;
 
-        graphics.clear();
-        graphics.fillStyle(0x2a2a2a, 1);
-        graphics.fillRect(0, 0, tileSize, tileSize);
-        graphics.generateTexture('tile_wall', tileSize, tileSize);
+            const source = texture.getSourceImage() as HTMLCanvasElement;
+            const ctx = source.getContext('2d');
+            if (ctx) {
+                ctx.fillStyle = this.hexToCSS(color);
+                ctx.fillRect(0, 0, tileSize, tileSize);
+            }
+            texture.refresh();
+        };
 
-        graphics.clear();
-        graphics.fillStyle(0x6a0d0d, 1);
-        graphics.fillRect(0, 0, tileSize, tileSize);
-        graphics.generateTexture('tile_curtain', tileSize, tileSize);
-
-        graphics.destroy();
+        createTile('tile_floor', 0x4a3728);
+        createTile('tile_wall', 0x2a2a2a);
+        createTile('tile_curtain', 0x6a0d0d);
     }
 
-    create(): void {
-        const loadingText = this.add.text(
-            GAME_WIDTH / 2,
-            GAME_HEIGHT / 2 + 50,
-            'Caricamento completato...',
-            {
-                fontFamily: 'monospace',
-                fontSize: '16px',
-                color: '#ffffff',
-            }
-        );
-        loadingText.setOrigin(0.5);
+    /* Helper: Darken Color (Integer) */
+    private darkenColorInt(color: number, factor: number): number {
+        const r = (color >> 16) & 0xFF;
+        const g = (color >> 8) & 0xFF;
+        const b = color & 0xFF;
+        const newR = Math.max(0, Math.floor(r * factor));
+        const newG = Math.max(0, Math.floor(g * factor));
+        const newB = Math.max(0, Math.floor(b * factor));
+        return (newR << 16) | (newG << 8) | newB;
+    }
 
-        this.time.delayedCall(1000, () => {
-            this.cameras.main.fadeOut(300, 0, 0, 0);
-            this.cameras.main.once('camerafadeoutcomplete', () => {
-                this.scene.start(SCENES.MENU);
-            });
-        });
+    /* Helper: Hex ID to CSS String */
+    private hexToCSS(color: number): string {
+        return '#' + color.toString(16).padStart(6, '0');
     }
 }

@@ -66,9 +66,28 @@ export class Player {
         else if (input.y > 0) this.direction = 'down';
 
         if (this.isMoving) {
-            this.sprite.play(`player_walk_${this.direction}`, true);
+            this.safePlayAnimation(`player_walk_${this.direction}`, true);
+
+            /* Trail Effect */
+            if (this.scene.time.now % 100 < 20) { /* Spawn trail every ~100ms */
+                const trail = this.scene.add.sprite(this.sprite.x, this.sprite.y, 'player');
+                if (trail.texture.key !== '__MISSING') {
+                    trail.setFrame(this.sprite.frame.name);
+                    trail.setAlpha(0.5);
+                    trail.setTint(0xffffff);
+                    trail.setDepth(this.sprite.depth - 1);
+                    this.scene.tweens.add({
+                        targets: trail,
+                        alpha: 0,
+                        duration: 200,
+                        onComplete: () => trail.destroy()
+                    });
+                } else {
+                    trail.destroy();
+                }
+            }
         } else {
-            this.sprite.play(`player_idle_${this.direction}`, true);
+            this.safePlayAnimation(`player_idle_${this.direction}`, true);
         }
 
         /* Bobbing effect when idle */
@@ -121,5 +140,15 @@ export class Player {
 
     canInteract(): boolean {
         return this.canMove;
+    }
+
+    private safePlayAnimation(key: string, ignoreIfPlaying: boolean = true): void {
+        if (!this.scene.anims.exists(key)) return;
+
+        try {
+            this.sprite.play(key, ignoreIfPlaying);
+        } catch (e) {
+            console.warn(`Failed to play animation ${key}`, e);
+        }
     }
 }

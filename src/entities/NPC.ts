@@ -184,4 +184,39 @@ export class NPC {
         this.nameTag.destroy();
         this.exclamation.destroy();
     }
+
+    public showInteractionIndicator(show: boolean): void {
+        if (!this.exclamation) return;
+
+        if (show && !this.exclamation.visible) {
+            this.exclamation.setVisible(true);
+            this.scene.tweens.add({
+                targets: this.exclamation,
+                y: this.sprite.y - 55,
+                yoyo: true,
+                duration: 500,
+                repeat: -1
+            });
+        } else if (!show) {
+            this.exclamation.setVisible(false);
+            this.scene.tweens.killTweensOf(this.exclamation);
+        }
+    }
+
+    public checkAvailability(time: 'morning' | 'afternoon' | 'evening' | 'night'): void {
+        if (!this.config.availableTime) return;
+
+        const isAvailable = this.config.availableTime.includes(time);
+        this.sprite.setVisible(isAvailable);
+        this.interactionZone.disableInteractive(); /* Reset first */
+        if (isAvailable) {
+            this.interactionZone.setInteractive();
+        }
+
+        /* Hide UI if disabled */
+        if (!isAvailable) {
+            this.nameTag.setVisible(false);
+            this.exclamation.setVisible(false);
+        }
+    }
 }

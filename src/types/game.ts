@@ -12,6 +12,7 @@ export type SceneKey =
     | 'PauseScene'
     | 'SettingsScene'
     | 'AchievementsScene'
+    | 'CreditsScene'
     | 'EndingScene';
 
 export type MapKey =

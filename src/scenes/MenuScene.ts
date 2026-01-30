@@ -101,8 +101,9 @@ export class MenuScene extends BaseScene {
     }
 
     private createButtons(): void {
-        const buttonY = GAME_HEIGHT / 2 + 50;
+        const buttonY = GAME_HEIGHT / 2 + 40; /* Started 10px higher */
         const hasSave = SaveSystem.hasSave();
+        const spacing = 50; /* Reduced from 60 */
 
         this.createButton(GAME_WIDTH / 2, buttonY, 'NUOVA PARTITA', () => {
             SaveSystem.reset();
@@ -110,32 +111,56 @@ export class MenuScene extends BaseScene {
         });
 
         if (hasSave) {
-            this.createButton(GAME_WIDTH / 2, buttonY + 60, 'CONTINUA', () => {
-                this.startGame(true);
-            });
-            this.createSavePreview(GAME_WIDTH / 2 + 200, buttonY + 30);
+            let step = 0;
+            const preview = this.createSavePreview(GAME_WIDTH / 2 + 200, buttonY + 30);
 
-            this.createButton(GAME_WIDTH / 2, buttonY + 120, 'IMPOSTAZIONI', () => {
+            const btn = this.createButton(GAME_WIDTH / 2, buttonY + spacing, 'CONTINUA', () => {
+                if (step === 0) {
+                    /* Show Preview */
+                    step = 1;
+                    btn.label.setText('CARICA');
+                    btn.label.setColor('#ffd700');
+
+                    this.tweens.add({
+                        targets: preview,
+                        alpha: 1,
+                        x: GAME_WIDTH / 2 + 180,
+                        duration: 500,
+                        ease: 'Power2'
+                    });
+                } else {
+                    /* Start Game */
+                    this.startGame(true);
+                }
+            });
+
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 2, 'IMPOSTAZIONI', () => {
                 this.scene.launch(SCENES.SETTINGS);
             });
-            this.createButton(GAME_WIDTH / 2, buttonY + 180, 'TROFEI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 3, 'TROFEI', () => {
                 this.scene.start(SCENES.ACHIEVEMENTS);
+            });
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 4, 'CREDITI', () => {
+                this.scene.start(SCENES.CREDITS);
             });
         } else {
-            this.createButton(GAME_WIDTH / 2, buttonY + 60, 'IMPOSTAZIONI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing, 'IMPOSTAZIONI', () => {
                 this.scene.launch(SCENES.SETTINGS);
             });
-            this.createButton(GAME_WIDTH / 2, buttonY + 120, 'TROFEI', () => {
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 2, 'TROFEI', () => {
                 this.scene.start(SCENES.ACHIEVEMENTS);
+            });
+            this.createButton(GAME_WIDTH / 2, buttonY + spacing * 3, 'CREDITI', () => {
+                this.scene.start(SCENES.CREDITS);
             });
         }
     }
 
-    private createSavePreview(x: number, y: number): void {
+    private createSavePreview(x: number, y: number): Phaser.GameObjects.Container {
         const summary = SaveSystem.getSaveSummary();
-        const container = this.add.container(x, y);
+        const container = this.add.container(x + 50, y); /* Start offset */
 
-        const bg = this.add.rectangle(0, 0, 180, 100, 0x000000, 0.6);
+        const bg = this.add.rectangle(0, 0, 180, 100, 0x000000, 0.8);
         bg.setStrokeStyle(1, 0xd4af37);
 
         const title = this.add.text(0, -35, 'ULTIMO SALVATAGGIO', {
@@ -154,17 +179,10 @@ export class MenuScene extends BaseScene {
         container.add([bg, title, details]);
         container.setAlpha(0);
 
-        this.tweens.add({
-            targets: container,
-            alpha: 1,
-            x: x - 20,
-            duration: 800,
-            delay: 1000,
-            ease: 'Power2'
-        });
+        return container;
     }
 
-    private createButton(x: number, y: number, text: string, callback: () => void): void {
+    private createButton(x: number, y: number, text: string, callback: () => void): { bg: Phaser.GameObjects.Rectangle, label: Phaser.GameObjects.Text } {
         const bg = this.add.rectangle(x, y, 220, 45, COLORS.purple, 0.8);
         bg.setStrokeStyle(2, COLORS.gold);
 
@@ -197,6 +215,8 @@ export class MenuScene extends BaseScene {
                 });
             })
             .on('pointerdown', callback);
+
+        return { bg, label };
     }
 
     private createStats(): void {

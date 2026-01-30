@@ -23,6 +23,7 @@ export interface NPCConfig extends EntityConfig {
     dialogId: string;
     faceDirection: Direction;
     isBoss: boolean;
+    availableTime?: ('morning' | 'afternoon' | 'evening' | 'night')[];
 }
 
 export interface NPCState {

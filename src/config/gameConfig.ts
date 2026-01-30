@@ -13,6 +13,7 @@ export const SCENES: Record<string, SceneKey> = {
     PAUSE: 'PauseScene',
     SETTINGS: 'SettingsScene',
     ACHIEVEMENTS: 'AchievementsScene',
+    CREDITS: 'CreditsScene',
 };
 
 export const MAPS: Record<string, MapKey> = {

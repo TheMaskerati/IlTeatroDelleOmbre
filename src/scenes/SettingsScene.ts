@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENES, COLORS, GAME_WIDTH, GAME_HEIGHT } from '@/config/gameConfig';
 import { Slider } from '@/ui/Slider';
+import { Toggle } from '@/ui/Toggle';
 import { AudioManager } from '@/systems/AudioManager';
 import { SaveSystem } from '@/systems/SaveSystem';
 
@@ -22,6 +23,12 @@ export class SettingsScene extends Phaser.Scene {
         const centerX = GAME_WIDTH / 2;
         const centerY = GAME_HEIGHT / 2;
 
+        /* Ensure fullscreen targets the wrapper for better scaling */
+        const gameDiv = document.getElementById('game');
+        if (gameDiv) {
+            this.scale.fullscreenTarget = gameDiv;
+        }
+
         this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, COLORS.black).setOrigin(0);
 
         this.add.text(centerX, 80, 'IMPOSTAZIONI', {
@@ -41,7 +48,23 @@ export class SettingsScene extends Phaser.Scene {
             SaveSystem.setSFXVolume(val);
         });
 
-        const backBtn = this.add.text(centerX, 450, 'INDIETRO', {
+        /* Gameplay Settings */
+        const initialSpeedVal = (settings.textSpeed - 0.5) / 2.5;
+        new Slider(this, centerX, 400, 'VELOCITÀ TESTO', initialSpeedVal, 300, (val) => {
+            const speed = 0.5 + val * 2.5;
+            SaveSystem.setTextSpeed(speed);
+        });
+
+        new Toggle(this, centerX, 500, 'SCHERMO INTERO', settings.fullscreen, (val) => {
+            SaveSystem.setFullscreen(val);
+            if (val) {
+                this.scale.startFullscreen();
+            } else {
+                this.scale.stopFullscreen();
+            }
+        });
+
+        const backBtn = this.add.text(centerX, 600, 'INDIETRO', {
             fontFamily: 'monospace',
             fontSize: '24px',
             color: '#ffffff',
@@ -53,8 +76,6 @@ export class SettingsScene extends Phaser.Scene {
         backBtn.on('pointerout', () => backBtn.setColor('#ffffff'));
         backBtn.on('pointerdown', () => {
             this.scene.stop();
-            /* If launched from Pause, it resumes automatically.
-               If from Menu, we might need a specific transition or just stopping is enough. */
         });
     }
 }

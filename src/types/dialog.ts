@@ -10,6 +10,7 @@ export interface DialogChoice {
     karmaEffect?: number;
     temptationEffect?: number;
     action?: string;
+    condition?: string; /* e.g. "karma>50", "hasItem:key" */
 }
 
 export interface Dialog {

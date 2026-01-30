@@ -18,6 +18,8 @@ interface SaveData {
         language: 'it' | 'en';
         musicVolume: number;
         sfxVolume: number;
+        textSpeed: number;
+        fullscreen: boolean;
     };
     timestamp: number;
 }
@@ -41,6 +43,8 @@ const DEFAULT_SAVE: SaveData = {
         language: 'it',
         musicVolume: 0.5,
         sfxVolume: 0.7,
+        textSpeed: 1, /* 0.5=slow, 1=normal, 2=fast */
+        fullscreen: false,
     },
     timestamp: 0,
 };
@@ -226,6 +230,16 @@ class SaveSystemClass {
 
     setSFXVolume(vol: number): void {
         this.data.settings.sfxVolume = Math.max(0, Math.min(1, vol));
+        this.save();
+    }
+
+    setTextSpeed(speed: number): void {
+        this.data.settings.textSpeed = Math.max(0.5, Math.min(3, speed));
+        this.save();
+    }
+
+    setFullscreen(fullscreen: boolean): void {
+        this.data.settings.fullscreen = fullscreen;
         this.save();
     }
 

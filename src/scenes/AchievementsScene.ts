@@ -7,12 +7,18 @@ export class AchievementsScene extends BaseScene {
         super(SCENES.ACHIEVEMENTS);
     }
 
+    private scrollContainer: Phaser.GameObjects.Container;
+    private scrollMask: Phaser.Display.Masks.GeometryMask;
+    private scrollY: number = 0;
+    private maxScroll: number = 0;
+
     create(): void {
         super.create();
         this.createBackground();
         this.createHeader();
-        this.createAchievementGrid();
+        this.createAchievementList();
         this.createBackButton();
+        this.setupScrollInput();
     }
 
     private createBackground(): void {
@@ -45,7 +51,18 @@ export class AchievementsScene extends BaseScene {
         title.setOrigin(0.5);
 
         const progress = AchievementManager.getProgress();
-        const subtitle = this.add.text(GAME_WIDTH / 2, 90, `${progress.unlocked} / ${progress.total} sbloccati`, {
+        const percentage = Math.floor((progress.unlocked / progress.total) * 100);
+
+        /* Progress Bar */
+        const barW = 300;
+        const barH = 10;
+        const barX = GAME_WIDTH / 2 - barW / 2;
+        const barY = 85;
+
+        this.add.rectangle(GAME_WIDTH / 2, barY, barW, barH, 0x333333).setOrigin(0.5);
+        this.add.rectangle(barX, barY - barH / 2, barW * (percentage / 100), barH, 0xd4af37).setOrigin(0, 0);
+
+        const subtitle = this.add.text(GAME_WIDTH / 2, 110, `${progress.unlocked} / ${progress.total} sbloccati (${percentage}%)`, {
             fontFamily: 'monospace',
             fontSize: '14px',
             color: '#888888'
@@ -53,77 +70,187 @@ export class AchievementsScene extends BaseScene {
         subtitle.setOrigin(0.5);
     }
 
-    private createAchievementGrid(): void {
+    private createAchievementList(): void {
         const achievements = AchievementManager.getVisible();
-        const cols = 3;
-        const cardW = 200;
-        const cardH = 100;
-        const startX = (GAME_WIDTH - cols * cardW) / 2 + cardW / 2;
+        const cardH = 80;
+        const gap = 15;
         const startY = 150;
+        const listHeight = GAME_HEIGHT - startY - 60; /* Leave space for bottom button */
+
+        this.scrollContainer = this.add.container(0, startY);
+
+        const maskShape = this.make.graphics({});
+        maskShape.fillStyle(0xffffff);
+        maskShape.fillRect(0, startY, GAME_WIDTH, listHeight);
+        this.scrollMask = new Phaser.Display.Masks.GeometryMask(this, maskShape);
+        this.scrollContainer.setMask(this.scrollMask);
 
         achievements.forEach((ach, i) => {
-            const col = i % cols;
-            const row = Math.floor(i / cols);
-            const x = startX + col * cardW;
-            const y = startY + row * (cardH + 20);
-
-            this.createAchievementCard(x, y, ach);
+            const y = i * (cardH + gap) + cardH / 2;
+            this.createAchievementCard(GAME_WIDTH / 2, y, ach, cardH);
         });
+
+        const totalContentHeight = achievements.length * (cardH + gap);
+        this.maxScroll = Math.max(0, totalContentHeight - listHeight);
     }
 
-    private createAchievementCard(x: number, y: number, ach: Achievement): void {
+    private createAchievementCard(x: number, y: number, ach: Achievement, height: number): void {
+        const width = 500;
         const isUnlocked = ach.unlocked;
 
-        const card = this.add.rectangle(x, y, 180, 90, isUnlocked ? 0x2a2a4e : 0x1a1a2e);
-        card.setStrokeStyle(2, isUnlocked ? 0xd4af37 : 0x333344);
+        const card = this.add.container(x, y);
+        this.scrollContainer.add(card);
 
-        const iconBg = this.add.circle(x - 50, y, 25, isUnlocked ? 0x2a2a4e : 0x1a1a2e);
-        this.drawTrophyIcon(x - 50, y, isUnlocked);
+        /* Background */
+        const bg = this.add.rectangle(0, 0, width, height, isUnlocked ? 0x2a2a4e : 0x151520);
+        bg.setStrokeStyle(2, isUnlocked ? 0xd4af37 : 0x333344);
+        card.add(bg);
 
-        const name = this.add.text(x + 10, y - 20, ach.name, {
+        /* Icon */
+        const iconX = -width / 2 + 50;
+        const iconBg = this.add.circle(iconX, 0, 30, isUnlocked ? 0x1a1a2e : 0x0a0a10);
+        iconBg.setStrokeStyle(1, isUnlocked ? 0xd4af37 : 0x444444);
+        card.add(iconBg);
+
+        this.drawIcon(card, iconX, 0, ach.icon, isUnlocked);
+
+        /* Text */
+        const textX = iconX + 50;
+        const titleColor = isUnlocked ? '#ffffff' : '#666666';
+        const descColor = isUnlocked ? '#aaaaaa' : '#444444';
+
+        const title = this.add.text(textX, -15, ach.hidden && !isUnlocked ? '???' : ach.name, {
+            fontFamily: 'serif',
+            fontSize: '20px',
+            color: titleColor
+        }).setOrigin(0, 0.5);
+
+        const desc = this.add.text(textX, 15, ach.hidden && !isUnlocked ? 'Segreto' : ach.description, {
             fontFamily: 'monospace',
-            fontSize: '14px',
-            color: isUnlocked ? '#ffffff' : '#666666'
-        });
-        name.setOrigin(0, 0.5);
+            fontSize: '12px',
+            color: descColor,
+            wordWrap: { width: width - 120 }
+        }).setOrigin(0, 0.5);
 
-        const desc = this.add.text(x + 10, y + 10, ach.description, {
-            fontFamily: 'monospace',
-            fontSize: '10px',
-            color: isUnlocked ? '#aaaaaa' : '#444444',
-            wordWrap: { width: 100 }
-        });
-        desc.setOrigin(0, 0.5);
+        card.add([title, desc]);
 
-        if (!isUnlocked && ach.hidden) {
-            name.setText('???');
-            desc.setText('Segreto');
+        /* Locked / Checkmark overlay */
+        if (isUnlocked) {
+            const check = this.add.text(width / 2 - 30, 0, '✓', {
+                fontSize: '24px',
+                color: '#d4af37'
+            }).setOrigin(0.5);
+            card.add(check);
+        } else {
+            const lock = this.add.text(width / 2 - 30, 0, 'BLOCCATO', {
+                fontSize: '20px',
+                color: '#444444'
+            }).setOrigin(0.5);
+            card.add(lock);
         }
     }
 
-    private drawTrophyIcon(x: number, y: number, isUnlocked: boolean): void {
-        const color = isUnlocked ? 0xd4af37 : 0x555555;
+    private drawIcon(container: Phaser.GameObjects.Container, x: number, y: number, type: string, unlocked: boolean): void {
         const g = this.add.graphics();
+        const color = unlocked ? 0xd4af37 : 0x555555;
+        g.fillStyle(color);
+        g.lineStyle(2, color);
 
-        /* Trophy cup body */
-        g.fillStyle(color, 1);
-        g.fillRoundedRect(x - 12, y - 10, 24, 18, 4);
-
-        /* Trophy handles */
-        g.lineStyle(3, color, 1);
-        g.strokeCircle(x - 15, y - 2, 6);
-        g.strokeCircle(x + 15, y - 2, 6);
-
-        /* Trophy base */
-        g.fillStyle(color, 1);
-        g.fillRect(x - 8, y + 8, 16, 4);
-        g.fillRect(x - 12, y + 12, 24, 4);
-
-        /* Star on trophy if unlocked */
-        if (isUnlocked) {
-            const star = this.add.star(x, y - 2, 5, 4, 8, 0xffffff);
-            star.setAlpha(0.8);
+        switch (type) {
+            case 'shield':
+                g.beginPath();
+                g.moveTo(x - 10, y - 10);
+                g.lineTo(x + 10, y - 10);
+                g.lineTo(x + 10, y + 5);
+                g.lineTo(x, y + 15);
+                g.lineTo(x - 10, y + 5);
+                g.closePath();
+                g.fillPath();
+                break;
+            case 'star':
+                this.drawStar(g, x, y, 5, 12, 6, color);
+                break;
+            case 'mask':
+                g.fillEllipse(x, y, 20, 25);
+                g.fillStyle(0x000000);
+                g.fillCircle(x - 5, y - 2, 2);
+                g.fillCircle(x + 5, y - 2, 2);
+                break;
+            case 'heart':
+                g.fillCircle(x - 5, y - 5, 6);
+                g.fillCircle(x + 5, y - 5, 6);
+                g.beginPath();
+                g.moveTo(x - 11, y - 2);
+                g.lineTo(x, y + 12);
+                g.lineTo(x + 11, y - 2);
+                g.fillPath();
+                break;
+            case 'crown':
+                g.beginPath();
+                g.moveTo(x - 12, y + 8);
+                g.lineTo(x + 12, y + 8);
+                g.lineTo(x + 12, y - 8);
+                g.lineTo(x + 6, y);
+                g.lineTo(x, y - 12);
+                g.lineTo(x - 6, y);
+                g.lineTo(x - 12, y - 8);
+                g.closePath();
+                g.fillPath();
+                break;
+            default: /* Trophy or generic */
+                g.fillRect(x - 8, y + 8, 16, 4); /* Base */
+                g.moveTo(x - 10, y - 8);
+                g.lineTo(x, y + 8);
+                g.lineTo(x + 10, y - 8); /* Cup */
+                g.strokePath();
+                g.fillCircle(x, y - 10, 8);
+                break;
         }
+
+        container.add(g);
+    }
+
+    private drawStar(g: Phaser.GameObjects.Graphics, x: number, y: number, points: number, outer: number, inner: number, color: number): void {
+        g.fillStyle(color);
+        g.beginPath();
+        const step = Math.PI / points;
+        let angle = -Math.PI / 2;
+
+        for (let i = 0; i < points * 2; i++) {
+            const rad = (i % 2 === 0) ? outer : inner;
+            const px = x + Math.cos(angle) * rad;
+            const py = y + Math.sin(angle) * rad;
+            if (i === 0) g.moveTo(px, py);
+            else g.lineTo(px, py);
+            angle += step;
+        }
+        g.closePath();
+        g.fillPath();
+    }
+
+    private setupScrollInput(): void {
+        this.input.on('wheel', (pointer: Phaser.Input.Pointer, gameObjects: any, deltaX: number, deltaY: number) => {
+            this.updateScroll(deltaY * 0.5);
+        });
+
+        /* Simple drag support */
+        let startY = 0;
+        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            startY = pointer.y;
+        });
+
+        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+            if (pointer.isDown) {
+                const diff = startY - pointer.y;
+                this.updateScroll(diff);
+                startY = pointer.y;
+            }
+        });
+    }
+
+    private updateScroll(delta: number): void {
+        this.scrollY = Phaser.Math.Clamp(this.scrollY + delta, 0, this.maxScroll);
+        this.scrollContainer.y = 150 - this.scrollY;
     }
 
     private createBackButton(): void {

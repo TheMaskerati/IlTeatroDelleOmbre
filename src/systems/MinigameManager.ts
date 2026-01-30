@@ -10,6 +10,7 @@ export class MinigameManager {
     private isActive: boolean = false;
     private currentType: MinigameType | null = null;
     private onComplete: ((success: boolean) => void) | null = null;
+    private highScores: Record<string, number> = {};
 
     /* Shared UI */
     private instructionText: Phaser.GameObjects.Text;
@@ -78,6 +79,49 @@ export class MinigameManager {
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
         this.createUI();
+        this.loadHighScores();
+    }
+
+    private loadHighScores(): void {
+        const saved = localStorage.getItem('tom_highscores');
+        if (saved) {
+            try {
+                this.highScores = JSON.parse(saved);
+            } catch (e) {
+                console.warn('Failed to parse high scores', e);
+            }
+        }
+    }
+
+    private saveHighScore(type: string, score: number): void {
+        const current = this.highScores[type] || 0;
+        if (score > current) {
+            this.highScores[type] = score;
+            localStorage.setItem('tom_highscores', JSON.stringify(this.highScores));
+            /* Show "NEW RECORD" text */
+            this.showNewRecord();
+        }
+    }
+
+    private showNewRecord(): void {
+        const txt = this.scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50, 'NEW RECORD!', {
+            fontFamily: 'Impact',
+            fontSize: '48px',
+            color: '#ffd700',
+            stroke: '#000000',
+            strokeThickness: 6
+        });
+        txt.setOrigin(0.5);
+        txt.setDepth(1001);
+
+        this.scene.tweens.add({
+            targets: txt,
+            scale: { from: 0.5, to: 1.2 },
+            alpha: { from: 1, to: 0 },
+            duration: 2000,
+            ease: 'Back.out',
+            onComplete: () => txt.destroy()
+        });
     }
 
     private createUI(): void {
@@ -285,7 +329,7 @@ export class MinigameManager {
             this.container.add(card);
         });
 
-        this.startTimer(30000 - difficulty * 2000, false);
+        this.startTimer(Math.max(10000, 30000 - difficulty * 2000), false);
     }
 
     private flipCard(idx: number): void {
@@ -657,7 +701,34 @@ export class MinigameManager {
             if (isPerfect) {
                 /* Show perfect message or similar */
                 console.log('PERFECT PERFORMANCE!');
+
+                /* Particle/Visual effect for perfect */
+                const particles = this.scene.add.particles(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'star', {
+                    speed: { min: 100, max: 300 },
+                    angle: { min: 0, max: 360 },
+                    scale: { start: 0.5, end: 0 },
+                    blendMode: 'ADD',
+                    lifespan: 1000,
+                    gravityY: 200,
+                    quantity: 20
+                });
+                this.scene.time.delayedCall(1000, () => particles.destroy());
             }
+
+            /* Save High Score */
+            let score = 0;
+            switch (this.currentType) {
+                case 'qte': score = this.qteCount; break;
+                case 'rhythm': score = this.rhythmHits + this.combo * 2; break;
+                case 'hold': score = Math.floor(this.holdValue); break;
+                case 'breath': score = 100; break; /* Breath is win/loss */
+                case 'focus': score = Math.floor(this.focusScore); break;
+                case 'memory': score = 1000 - (this.gameTimer ? this.gameTimer.getElapsed() : 0); break;
+                case 'reaction': score = this.reactionDodges; break;
+                case 'pattern': score = this.patternSequence.length * 100 + this.combo * 10; break;
+                default: score = 100; break;
+            }
+            this.saveHighScore(this.currentType || 'unknown', score);
         } else {
             this.scene.cameras.main.shake(300, 0.02);
             this.scene.cameras.main.flash(200, 100, 0, 0);
