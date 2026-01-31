@@ -60,7 +60,6 @@ export class CreditsScene extends BaseScene {
             { text: '', style: 'spacer' },
             { text: 'Tech stack', style: 'section' },
             { text: '', style: 'spacer' },
-            { text: 'Maya', style: 'normal' },
             { text: 'Electron e Vite', style: 'normal' },
             { text: 'Phaser.js', style: 'normal' },
             { text: 'Typescript', style: 'normal' },
