@@ -153,8 +153,6 @@ export class EffectsManager {
                 this.vignette.setVisible(true);
                 this.vignette.setAlpha(VISUALS.ATMOSPHERE.FATHER_HOUSE.vignette);
                 break;
-
-            case "apartment":
             default:
                 this.ambientLayer.setFillStyle(
                     VISUALS.COLORS.AMBIENT.APARTMENT,

@@ -1,18 +1,16 @@
-import { ENEMIES, SPAWN_POINTS } from "@/config/constants";
 import {
     BATTLE_CONFIG,
-    COLORS,
     GAME_HEIGHT,
     GAME_WIDTH,
     SCALE,
     SCENES,
     TILE_SIZE,
 } from "@/config/gameConfig";
-import { LOCALE } from "@/config/locale";
 import { TransitionManager } from "@/effects/TransitionManager";
 import { NPC } from "@/entities/NPC";
 import { Player } from "@/entities/Player";
 import { AudioManager } from "@/systems/AudioManager";
+import { DataManager } from "@/systems/DataManager";
 import { DialogManager } from "@/systems/DialogManager";
 import { EffectsManager } from "@/systems/EffectsManager";
 import { KarmaSystem } from "@/systems/KarmaSystem";
@@ -59,9 +57,6 @@ export class GameScene extends BaseScene {
 
     private stage: number = 1;
     private static tutorialDone = false;
-
-    /** Cycle of maps for Endless Mode progression */
-    private readonly MAP_CYCLE: MapKey[] = ["theater", "naplesAlley", "fatherHouse"];
 
     public static resetState(): void {
         GameScene.tutorialDone = false;
@@ -140,10 +135,14 @@ export class GameScene extends BaseScene {
 
         /** Day/Night Cycle Handling */
         TimeManager.onTimeChange((time) => {
-            this.npcs.forEach((npc) => npc.checkAvailability(time));
+            for (const npc of this.npcs) {
+                npc.checkAvailability(time);
+            }
         });
         /* Initial check */
-        this.npcs.forEach((npc) => npc.checkAvailability(TimeManager.getCurrentTime()));
+        for (const npc of this.npcs) {
+            npc.checkAvailability(TimeManager.getCurrentTime());
+        }
     }
 
     private setupAudio(): void {
@@ -176,10 +175,11 @@ export class GameScene extends BaseScene {
         }
         const defaults: Record<string, { x: number; y: number }> = {};
 
-        Object.keys(SPAWN_POINTS).forEach((key) => {
+        const spawnPoints = DataManager.getInstance().mapData.spawnPoints;
+        Object.keys(spawnPoints).forEach((key) => {
             defaults[key] = {
-                x: SPAWN_POINTS[key].x * TILE_SIZE * SCALE,
-                y: SPAWN_POINTS[key].y * TILE_SIZE * SCALE,
+                x: spawnPoints[key].x * TILE_SIZE * SCALE,
+                y: spawnPoints[key].y * TILE_SIZE * SCALE,
             };
         });
 
@@ -191,17 +191,19 @@ export class GameScene extends BaseScene {
 
         npcIds.forEach((id) => {
             /** Simplification: Spawn only if defined in ENEMIES */
-            if (ENEMIES[id]) {
-                const npc = new NPC(this, ENEMIES[id]);
+            const enemyData = DataManager.getInstance().enemies[id];
+            if (enemyData) {
+                const npc = new NPC(this, enemyData);
                 this.npcs.push(npc);
             }
         });
     }
 
     private createUI(): void {
+        const locale = DataManager.getInstance().locale;
         /** Prompt */
         this.interactionPrompt = this.add
-            .text(GAME_WIDTH / 2, GAME_HEIGHT - 80, LOCALE.UI.INTERACTION_PROMPT, {
+            .text(GAME_WIDTH / 2, GAME_HEIGHT - 80, locale.UI.INTERACTION_PROMPT, {
                 fontFamily: "monospace",
                 fontSize: "20px",
                 fontStyle: "bold",
@@ -242,8 +244,9 @@ export class GameScene extends BaseScene {
     }
 
     private showMapName(): void {
-        const name = LOCALE.MAP_NAMES[this.currentMap] || this.currentMap;
-        this.mapNameText.setText(`${name}${LOCALE.UI.MAP_NAME_SEPARATOR}${this.stage}`);
+        const locale = DataManager.getInstance().locale;
+        const name = locale.MAP_NAMES[this.currentMap] || this.currentMap;
+        this.mapNameText.setText(`${name}${locale.UI.MAP_NAME_SEPARATOR}${this.stage}`);
         this.tweens.add({
             targets: this.mapNameText,
             alpha: 1,
@@ -271,7 +274,7 @@ export class GameScene extends BaseScene {
 
         /* Input Handling (Keyboard + Mobile) */
         const input = this.getMovementInput();
-        if (this.joystick && this.joystick.isActive()) {
+        if (this.joystick?.isActive()) {
             if (this.joystick.left) input.x = -1;
             if (this.joystick.right) input.x = 1;
             if (this.joystick.up) input.y = -1;
@@ -279,8 +282,7 @@ export class GameScene extends BaseScene {
         }
 
         const interactPressed =
-            Phaser.Input.Keyboard.JustDown(this.keys.E) ||
-            (this.actionBtn && this.actionBtn.isActionActive());
+            Phaser.Input.Keyboard.JustDown(this.keys.E) || this.actionBtn?.isActionActive();
 
         /* Mobile Touch Interaction Handled by ActionBtn now */
 
@@ -290,25 +292,28 @@ export class GameScene extends BaseScene {
             delta,
             this.player.getSprite() as Phaser.Physics.Arcade.Sprite,
         );
-        this.npcs.forEach((npc) => npc.update(delta, this.player.getPosition()));
+        for (const npc of this.npcs) {
+            npc.update(delta, this.player.getPosition());
+        }
 
         /* Interactions */
         let nearTarget = false;
 
-        this.npcs.forEach((npc) => {
+        for (const npc of this.npcs) {
             if (
                 Phaser.Math.Distance.BetweenPoints(this.player.getPosition(), npc.getPosition()) <
                 50
             ) {
                 nearTarget = true;
+                const locale = DataManager.getInstance().locale;
                 this.interactionPrompt
-                    .setText(LOCALE.UI.CHALLENGE_PROMPT + npc.getName())
+                    .setText(locale.UI.CHALLENGE_PROMPT + npc.getName())
                     .setVisible(true);
                 /** Trigger objective when near NPC */
                 ObjectiveManager.getInstance().onNearNPC(npc.getId());
                 if (interactPressed) this.startEncounter(npc);
             }
-        });
+        }
 
         if (!nearTarget) {
             const doors = this.mapManager.getDoors();
@@ -322,8 +327,9 @@ export class GameScene extends BaseScene {
                     ) < 50
                 ) {
                     nearTarget = true;
+                    const locale = DataManager.getInstance().locale;
                     this.interactionPrompt
-                        .setText(`[E] ${door.label || LOCALE.UI.DOOR_DEFAULT_LABEL}`)
+                        .setText(`[E] ${door.label || locale.UI.DOOR_DEFAULT_LABEL}`)
                         .setVisible(true);
                     if (interactPressed) this.handleDoor(door);
                 }
@@ -474,9 +480,9 @@ export class GameScene extends BaseScene {
     }
 
     private setupNPCCollisions(): void {
-        this.npcs.forEach((npc) =>
-            this.physics.add.collider(this.player.getSprite(), npc.getSprite()),
-        );
+        for (const npc of this.npcs) {
+            this.physics.add.collider(this.player.getSprite(), npc.getSprite());
+        }
     }
     private setupDoorTriggers(): void {}
     private setupCamera(w: number, h: number): void {
