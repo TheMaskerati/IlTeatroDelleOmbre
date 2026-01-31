@@ -2,6 +2,9 @@ import { Dialog } from '@/types/dialog';
 import { EnemyConfig } from '@/types/entities';
 
 export const DIALOGS: Record<string, Dialog> = {
+
+
+
     intro_apartment: {
         id: 'intro_apartment',
         lines: [
@@ -297,4 +300,11 @@ export const NPC_CONFIGS: Record<string, { map: string; position: { x: number; y
     bully1: { map: 'naplesAlley', position: { x: 15, y: 25 }, dialogId: 'bully_encounter' },
     bully2: { map: 'naplesAlley', position: { x: 18, y: 28 }, dialogId: '' },
     father_shadow: { map: 'fatherHouse', position: { x: 12, y: 10 }, dialogId: 'father_confrontation' },
+};
+
+export const SPAWN_POINTS: Record<string, { x: number; y: number }> = {
+    apartment: { x: 10, y: 10 },
+    theater: { x: 5, y: 18 },
+    naplesAlley: { x: 8, y: 15 },
+    fatherHouse: { x: 12, y: 15 },
 };

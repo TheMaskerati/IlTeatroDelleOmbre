@@ -40,7 +40,6 @@ export class AudioManager {
 
         /* Check if the audio file exists */
         if (!this.scene.cache.audio.exists(key)) {
-            // console.debug(`Audio file not found: ${key}`);
             return;
         }
 

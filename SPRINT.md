@@ -37,6 +37,18 @@
 - Vicolo (tesa, inquietante)
 - Casa del padre (malinconica)
 - [x] Effetti sonori:
+- Passi (diversi per superficie: legno, pietra)
+- Porte (cigolio, tonfo)
+- UI (click, hover)
+- [x] Ambiente:
+- Pioggia (Vicolo)
+- Brusio leggero (Teatro)
+
+#### Note
+
+Il refactoring è concluso. Il codice è pulito, gli asset organizzati e l'atmosfera implementata.
+Progetto pronto per il rilascio Beta.
+
 - Dialoghi (typewriter tick)
 - [x] Selezione menu (click elegante)
 - Minigame (feedback successo/fallimento)

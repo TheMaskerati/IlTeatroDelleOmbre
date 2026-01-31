@@ -1,7 +1,7 @@
 import { BaseScene } from './BaseScene';
 import { SCENES, GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, SCALE, BATTLE_CONFIG, COLORS } from '@/config/gameConfig';
 import { LOCALE } from '@/config/locale';
-import { ENEMIES } from '@/config/constants';
+import { ENEMIES, SPAWN_POINTS } from '@/config/constants';
 import { Player } from '@/entities/Player';
 import { NPC } from '@/entities/NPC';
 import { MapManager, DoorConfig } from '@/systems/MapManager';
@@ -161,12 +161,15 @@ export class GameScene extends BaseScene {
         if (data?.playerX !== undefined && data?.playerY !== undefined) {
             return { x: data.playerX, y: data.playerY };
         }
-        const defaults: Record<string, { x: number; y: number }> = {
-            apartment: { x: 10 * TILE_SIZE * SCALE, y: 10 * TILE_SIZE * SCALE },
-            theater: { x: 5 * TILE_SIZE * SCALE, y: 18 * TILE_SIZE * SCALE },
-            naplesAlley: { x: 8 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
-            fatherHouse: { x: 12 * TILE_SIZE * SCALE, y: 15 * TILE_SIZE * SCALE },
-        };
+        const defaults: Record<string, { x: number; y: number }> = {};
+
+        Object.keys(SPAWN_POINTS).forEach(key => {
+            defaults[key] = {
+                x: SPAWN_POINTS[key].x * TILE_SIZE * SCALE,
+                y: SPAWN_POINTS[key].y * TILE_SIZE * SCALE
+            };
+        });
+
         return defaults[this.currentMap] || { x: 100, y: 100 };
     }
 
