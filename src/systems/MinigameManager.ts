@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MaskSystem } from './MaskSystem';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '@/config/gameConfig';
+import { LOCALE } from '@/config/locale';
 
 type MinigameType = 'qte' | 'balance' | 'rhythm' | 'hold' | 'breath' | 'focus' | 'memory' | 'reaction' | 'pattern';
 
@@ -103,7 +104,7 @@ export class MinigameManager {
     }
 
     private showNewRecord(): void {
-        const txt = this.scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50, 'NEW RECORD!', {
+        const txt = this.scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50, LOCALE.MINIGAME.NEW_RECORD, {
             fontFamily: 'Impact',
             fontSize: '48px',
             color: '#ffd700',
@@ -169,11 +170,11 @@ export class MinigameManager {
     }
 
     start(type: 'dodge' | 'timing' | 'mash', difficulty: number, onComplete: (success: boolean) => void): void {
-        /* Mappa i tipi semplificati ai tipi di minigame interni */
+        /** Map simplified types to internal minigame types */
         const typeMap: Record<'dodge' | 'timing' | 'mash', MinigameType> = {
-            'dodge': 'balance',    /* Schivare = mantenere equilibrio */
-            'timing': 'rhythm',    /* Timing = premere al momento giusto */
-            'mash': 'qte'          /* Mashing = premere rapidamente */
+            'dodge': 'balance',    /** Dodge = maintain balance */
+            'timing': 'rhythm',    /** Timing = press at right time */
+            'mash': 'qte'          /** Mashing = press quickly */
         };
 
         const minigameType = typeMap[type];
@@ -220,7 +221,7 @@ export class MinigameManager {
     private setupQTE(difficulty: number): void {
         this.qteCount = 0;
         this.qteTarget = Math.floor(5 + difficulty * 2);
-        this.instructionText.setText(`PREMI SPAZIO RAPIDAMENTE!\n0/${this.qteTarget}`);
+        this.instructionText.setText(LOCALE.MINIGAME.INSTRUCTIONS.QTE + `0/${this.qteTarget}`);
         this.startTimer(Math.max(2000, 4000 - difficulty * 300), false);
     }
 
@@ -228,7 +229,7 @@ export class MinigameManager {
         this.showBalanceUI();
         this.balanceValue = 0;
         this.balanceVelocity = (Math.random() > 0.5 ? 1 : -1) * 0.5;
-        this.instructionText.setText('TIENI LA BARRA AL CENTRO!');
+        this.instructionText.setText(LOCALE.MINIGAME.INSTRUCTIONS.BALANCE);
         this.startTimer(Math.min(8000, 4000 + difficulty * 500), true);
     }
 
@@ -239,8 +240,8 @@ export class MinigameManager {
         this.rhythmGoal = Math.floor(3 + difficulty);
         this.rhythmSpeed = 0.02 + (difficulty * 0.005);
         this.rhythmScale = 0;
-        this.instructionText.setText('PREMI SPAZIO QUANDO I CERCHI COMBACIANO!');
-        /* No auto-win timer, win by hits */
+        this.instructionText.setText(LOCALE.MINIGAME.INSTRUCTIONS.RHYTHM);
+        /** No auto-win timer, win by hits */
     }
 
     private setupHold(difficulty: number): void {
@@ -299,6 +300,7 @@ export class MinigameManager {
         const startX = GAME_WIDTH / 2 - (cols * cardW) / 2 + cardW / 2;
         const startY = GAME_HEIGHT / 2 - (rows * cardH) / 2 + cardH / 2;
 
+        // Colors: red, gold, purple, darkBlue, green, royalBlue
         const colors = [0xc41e3a, 0xd4af37, 0x3c1642, 0x0d1b2a, 0x228b22, 0x4169e1];
 
         values.forEach((val, idx) => {
@@ -365,7 +367,7 @@ export class MinigameManager {
     }
 
     private setupReaction(difficulty: number): void {
-        this.instructionText.setText('SCHIVA GLI OSTACOLI! [A/D o FRECCE]');
+        this.instructionText.setText(LOCALE.MINIGAME.INSTRUCTIONS.REACTION);
         this.reactionDodges = 0;
         this.reactionGoal = 5 + Math.floor(difficulty);
         this.reactionObstacles = [];
@@ -406,7 +408,7 @@ export class MinigameManager {
     }
 
     private setupPattern(difficulty: number): void {
-        this.instructionText.setText('MEMORIZZA LA SEQUENZA!');
+        this.instructionText.setText(LOCALE.MINIGAME.INSTRUCTIONS.PATTERN);
         this.patternSequence = [];
         this.patternInput = [];
         this.patternInputMode = false;
@@ -517,7 +519,7 @@ export class MinigameManager {
     private updateQTE(): void {
         if (Phaser.Input.Keyboard.JustDown(this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE))) {
             this.qteCount++;
-            this.instructionText.setText(`PREMI SPAZIO RAPIDAMENTE!\n${this.qteCount}/${this.qteTarget}`);
+            this.instructionText.setText(LOCALE.MINIGAME.INSTRUCTIONS.QTE + `${this.qteCount}/${this.qteTarget}`);
             this.scene.cameras.main.shake(50, 0.01);
             if (this.qteCount >= this.qteTarget) this.endMinigame(true);
         }
@@ -552,7 +554,7 @@ export class MinigameManager {
             if (diff < 10) {
                 this.rhythmHits++;
                 if (diff < 5) this.combo++;
-                this.instructionText.setText(`RITMO! ${this.rhythmHits}/${this.rhythmGoal}${this.combo > 0 ? '\nCOMBO ' + this.combo : ''}`);
+                this.instructionText.setText(LOCALE.MINIGAME.RHYTHM_PREFIX + `${this.rhythmHits}/${this.rhythmGoal}${this.combo > 0 ? LOCALE.MINIGAME.COMBO_PREFIX + this.combo : ''}`);
                 this.scene.cameras.main.flash(100, 0, 255, 0);
                 this.rhythmBeat.radius = 0; /* Reset immediately on hit */
                 if (this.rhythmHits >= this.rhythmGoal) this.endMinigame(true);
@@ -647,7 +649,7 @@ export class MinigameManager {
                 this.reactionObstacles.splice(i, 1);
                 this.reactionDodges++;
                 this.combo++;
-                this.instructionText.setText(`SCHIVA!\\nDodges: ${this.reactionDodges}/${this.reactionGoal}`);
+                this.instructionText.setText(LOCALE.MINIGAME.DODGES_PREFIX + `${this.reactionDodges}/${this.reactionGoal}`);
 
                 if (this.reactionDodges >= this.reactionGoal) {
                     this.endMinigame(true);

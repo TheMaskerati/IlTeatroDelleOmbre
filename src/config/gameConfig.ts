@@ -45,12 +45,24 @@ export const BATTLE_CONFIG = {
     temptationPerFight: 10,
     temptationPerResist: -5,
     fleeChance: 0.5,
+    difficultyScaling: 0.2,
 };
 
 export const KARMA_CONFIG = {
     resistBonus: 1,
     fightPenalty: -1,
     thresholdGoodEnding: 2,
+};
+
+export const UI_CONFIG = {
+    DIALOG_BOX_HEIGHT: 160,
+    DIALOG_BOX_BOTTOM_MARGIN: 10,
+    INTERACTION_DISTANCE: 50,
+    TIMER_BAR_HEIGHT: 4,
+    TIMER_BAR_WIDTH_OFFSET: 60,
+    TEXT_SPEED_DEFAULT: 1,
+    TYPEWRITER_DELAY: 25,
+    CHOICE_TIMER_DURATION: 10000,
 };
 
 export const PHASER_CONFIG: Phaser.Types.Core.GameConfig = {

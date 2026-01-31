@@ -28,6 +28,7 @@ export class BootScene extends Phaser.Scene {
         this.createLoadingBar();
 
         /* Audio loading is disabled for prototype stability. */
+        this.load.image('background_shadow', 'assets/background_shadow.png');
 
         this.load.on('complete', () => {
             /* Defer generation slightly to ensure scene is fully ready */

@@ -1,5 +1,6 @@
 import { BaseScene } from './BaseScene';
-import { SCENES, GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, SCALE } from '@/config/gameConfig';
+import { SCENES, GAME_WIDTH, GAME_HEIGHT, TILE_SIZE, SCALE, BATTLE_CONFIG, COLORS } from '@/config/gameConfig';
+import { LOCALE } from '@/config/locale';
 import { ENEMIES } from '@/config/constants';
 import { Player } from '@/entities/Player';
 import { NPC } from '@/entities/NPC';
@@ -15,12 +16,13 @@ import { TransitionManager } from '@/effects/TransitionManager';
 import { TimeManager } from '@/systems/TimeManager';
 import { VirtualJoystick } from '@/ui/VirtualJoystick';
 import { SaveSystem } from '@/systems/SaveSystem';
+import { ObjectiveManager } from '@/systems/ObjectiveManager';
 
 interface GameSceneData {
     map?: MapKey;
     playerX?: number;
     playerY?: number;
-    stage?: number; /* Traccia il round corrente */
+    stage?: number; /** Tracks current round */
 }
 
 /**
@@ -75,6 +77,13 @@ export class GameScene extends BaseScene {
 
         const startPos = this.getStartPosition(data);
 
+        /** Add Atmospheric Background (Seamless) */
+        this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'background_shadow')
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(-1000)
+            .setAlpha(0.6); // Slightly see-through to blend with black if needed, or opaque
+
         if (!this.textures.exists('player')) {
             console.error('CRITICAL: Player texture missing in GameScene! Returning to BootScene.');
             this.scene.start(SCENES.BOOT);
@@ -105,13 +114,13 @@ export class GameScene extends BaseScene {
             this.startTutorial();
         } else {
             this.showMapName();
-            MaskSystem.getInstance().updateTask('TROVA L\'USCITA');
+            ObjectiveManager.getInstance().initForMap(this.currentMap);
         }
 
         this.setupAudio();
         this.setupPauseMenu();
 
-        /* Day/Night Cycle Handling */
+        /** Day/Night Cycle Handling */
         TimeManager.onTimeChange((time) => {
             this.npcs.forEach(npc => npc.checkAvailability(time));
         });
@@ -155,7 +164,7 @@ export class GameScene extends BaseScene {
         const npcIds = this.mapManager.getNPCIds();
 
         npcIds.forEach(id => {
-            /* Semplificazione: Spawniamo solo se defined in ENEMIES */
+            /** Simplification: Spawn only if defined in ENEMIES */
             if (ENEMIES[id]) {
                 const npc = new NPC(this, ENEMIES[id]);
                 this.npcs.push(npc);
@@ -164,14 +173,14 @@ export class GameScene extends BaseScene {
     }
 
     private createUI(): void {
-        /* Prompt */
-        this.interactionPrompt = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 80, '[E] INTERAGISCI', {
+        /** Prompt */
+        this.interactionPrompt = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 80, LOCALE.UI.INTERACTION_PROMPT, {
             fontFamily: 'monospace', fontSize: '20px', fontStyle: 'bold',
             color: '#ffd700', backgroundColor: '#000000ee', padding: { x: 16, y: 8 },
             stroke: '#000000', strokeThickness: 4
         }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setVisible(false);
 
-        /* Pulse Animation */
+        /** Pulse Animation */
         this.tweens.add({
             targets: this.interactionPrompt,
             scaleX: 1.1,
@@ -181,7 +190,7 @@ export class GameScene extends BaseScene {
             repeat: -1
         });
 
-        /* Map Name */
+        /** Map Name */
         this.mapNameText = this.add.text(GAME_WIDTH / 2, 30, '', {
             fontFamily: 'monospace', fontSize: '20px',
             color: '#ffd700', backgroundColor: '#000000aa', padding: { x: 20, y: 10 }
@@ -190,14 +199,8 @@ export class GameScene extends BaseScene {
     }
 
     private showMapName(): void {
-        const names: Record<string, string> = {
-            apartment: 'Il Risveglio',
-            theater: 'Il Teatro',
-            bar: 'Il Bar',
-            fatherHouse: 'La Casa',
-        };
-        const name = names[this.currentMap] || this.currentMap;
-        this.mapNameText.setText(`${name} - Round ${this.stage}`);
+        const name = LOCALE.MAP_NAMES[this.currentMap] || this.currentMap;
+        this.mapNameText.setText(`${name}${LOCALE.UI.MAP_NAME_SEPARATOR}${this.stage}`);
         this.tweens.add({ targets: this.mapNameText, alpha: 1, duration: 500, hold: 2000, yoyo: true });
     }
 
@@ -205,7 +208,7 @@ export class GameScene extends BaseScene {
         this.time.delayedCall(1000, () => {
             this.dialogManager.show('intro_apartment', () => {
                 GameScene.tutorialDone = true;
-                MaskSystem.getInstance().updateTask('ESCI DALLO STUDIO');
+                ObjectiveManager.getInstance().trigger('tutorial_complete');
             });
         });
     }
@@ -238,7 +241,9 @@ export class GameScene extends BaseScene {
         this.npcs.forEach(npc => {
             if (Phaser.Math.Distance.BetweenPoints(this.player.getPosition(), npc.getPosition()) < 50) {
                 nearTarget = true;
-                this.interactionPrompt.setText(`[E] Sfida ${npc.getName()}`).setVisible(true);
+                this.interactionPrompt.setText(LOCALE.UI.CHALLENGE_PROMPT + npc.getName()).setVisible(true);
+                /** Trigger objective when near NPC */
+                ObjectiveManager.getInstance().onNearNPC(npc.getId());
                 if (interactPressed) this.startEncounter(npc);
             }
         });
@@ -249,7 +254,7 @@ export class GameScene extends BaseScene {
                 if (Phaser.Math.Distance.Between(this.player.getPosition().x, this.player.getPosition().y,
                     door.x * TILE_SIZE * SCALE, door.y * TILE_SIZE * SCALE) < 50) {
                     nearTarget = true;
-                    this.interactionPrompt.setText(`[E] ${door.label || 'Avanti'}`).setVisible(true);
+                    this.interactionPrompt.setText(`[E] ${door.label || LOCALE.UI.DOOR_DEFAULT_LABEL}`).setVisible(true);
                     if (interactPressed) this.handleDoor(door);
                 }
             });
@@ -263,11 +268,11 @@ export class GameScene extends BaseScene {
             this.cameras.main.setRotation(Math.sin(time / 2000) * madness * 0.2);
             this.cameras.main.setZoom(1.0 + Math.sin(time / 1500) * madness * 0.1);
 
+            /* Madness visual effects handled by EffectsManager or removed for clarity */
             if (this.stage > 7) {
-                /* Color Tint Panic */
-                const red = 255;
-                const others = Math.floor(255 - (Math.sin(time / 500) * 50 * madness));
-                this.cameras.main.setBackgroundColor(Phaser.Display.Color.GetColor(red, others, others));
+                /* Subtle effect instead of red tint */
+                const intensity = Math.min((this.stage - 7) * 0.1, 0.3);
+                this.cameras.main.shake(100, 0.0005 * intensity);
             }
         }
 
@@ -277,7 +282,7 @@ export class GameScene extends BaseScene {
                 karma: KarmaSystem.getKarmaScore(),
                 maskScore: MaskSystem.getInstance().getScore(),
                 stage: this.stage,
-                objective: MaskSystem.getInstance().getObjective()
+                objective: ObjectiveManager.getInstance().getObjective()
             });
         }
     }
@@ -288,9 +293,9 @@ export class GameScene extends BaseScene {
 
         const dialogId = npc.getDialogId();
         this.dialogManager.show(dialogId, (action) => {
-            /* Gestisce le azioni dalle scelte del dialogo */
+            /** Handle dialog choices actions */
             if (action?.includes('battle_') || action === 'start_minigame' || npc.isBoss()) {
-                const difficulty = 1.0 + (this.stage * 0.2);
+                const difficulty = 1.0 + (this.stage * BATTLE_CONFIG.difficultyScaling);
 
                 /* Determina il tipo di minigame in base alla scelta */
                 let minigameType: 'dodge' | 'timing' | 'mash' = 'dodge';
@@ -303,7 +308,7 @@ export class GameScene extends BaseScene {
                     minigameType = 'dodge'; /* Default = schivare */
                 }
 
-                MaskSystem.getInstance().updateTask(`SCONFIGGI ${npc.getName().toUpperCase()}`);
+                ObjectiveManager.getInstance().setObjective(`SCONFIGGI ${npc.getName().toUpperCase()}`);
 
                 this.minigameManager.start(minigameType, difficulty, (success) => {
                     if (success) {
@@ -326,7 +331,7 @@ export class GameScene extends BaseScene {
                             this.player.unfreeze();
                             npc.setDefeated(true);
                             SaveSystem.defeatBoss(npc.getId());
-                            MaskSystem.getInstance().updateTask('TROVA L\'USCITA');
+                            ObjectiveManager.getInstance().onEnemyDefeated(npc.getId());
                         });
                     } else {
                         this.dialogManager.show('minigame_loss', () => {
@@ -335,6 +340,8 @@ export class GameScene extends BaseScene {
                     }
                 });
             } else {
+                /* Trigger obiettivo per dialoghi completati (non-battle) */
+                ObjectiveManager.getInstance().trigger(`talked_${npc.getId()}`);
                 this.player.unfreeze();
             }
         });

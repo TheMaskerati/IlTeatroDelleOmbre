@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { COLORS, GAME_WIDTH, GAME_HEIGHT } from '@/config/gameConfig';
+import { COLORS, GAME_WIDTH, GAME_HEIGHT, UI_CONFIG } from '@/config/gameConfig';
+import { LOCALE } from '@/config/locale';
 import { Dialog, DialogLine, DialogChoice } from '@/types/dialog';
 import { DIALOGS } from '@/config/constants';
 import { KarmaSystem } from '@/systems/KarmaSystem';
@@ -40,8 +41,8 @@ export class DialogManager {
     }
 
     private createUI(): void {
-        const boxHeight = 160;
-        const boxY = GAME_HEIGHT - boxHeight / 2 - 10;
+        const boxHeight = UI_CONFIG.DIALOG_BOX_HEIGHT;
+        const boxY = GAME_HEIGHT - boxHeight / 2 - UI_CONFIG.DIALOG_BOX_BOTTOM_MARGIN;
 
         const bg = this.scene.add.rectangle(
             GAME_WIDTH / 2,
@@ -60,7 +61,7 @@ export class DialogManager {
         this.speakerText = this.scene.add.text(130, boxY - 65, '', {
             fontFamily: 'monospace',
             fontSize: '18px',
-            color: '#ffd700',
+            color: '#ffd700', // COLORS.gold
         });
 
         this.contentText = this.scene.add.text(130, boxY - 35, '', {
@@ -70,11 +71,10 @@ export class DialogManager {
             wordWrap: { width: GAME_WIDTH - 180 },
             lineSpacing: 8,
         });
-
         this.continuePrompt = this.scene.add.text(
             GAME_WIDTH - 40,
             boxY + boxHeight / 2 - 25,
-            '[INVIO] continua',
+            LOCALE.UI.CONTINUE_PROMPT,
             {
                 fontFamily: 'monospace',
                 fontSize: '12px',
@@ -159,7 +159,7 @@ export class DialogManager {
                     this.displayedText += this.fullText[charIndex];
                     this.contentText.setText(this.displayedText);
 
-                    /* Play voice blip every 2 characters to avoid audio spam */
+                    /** Play voice blip every 2 characters to avoid audio spam */
                     if (charIndex % 2 === 0) {
                         this.playVoiceBlip(line.speaker);
                     }
@@ -204,14 +204,15 @@ export class DialogManager {
         if (!this.currentDialog?.choices) return;
 
         this.continuePrompt.setVisible(true);
-        this.continuePrompt.setText('[INVIO] conferma');
+        this.continuePrompt.setText(LOCALE.UI.CONFIRM_PROMPT);
         this.speakerText.setText('');
-        this.contentText.setText('Cosa fai?');
+        this.contentText.setText(LOCALE.DIALOG.CHOICE_QUESTION);
         this.portrait.setTexture('player_portrait');
 
-        /* Timer bar for timed choices */
-        const timerDuration = 10000;
-        this.timerBar = this.scene.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 130, GAME_WIDTH - 40, 8, 0xd4af37);
+        /** Timer bar inside dialog box, above choices */
+        const boxY = GAME_HEIGHT - UI_CONFIG.DIALOG_BOX_HEIGHT / 2 - UI_CONFIG.DIALOG_BOX_BOTTOM_MARGIN;
+        const timerDuration = UI_CONFIG.CHOICE_TIMER_DURATION;
+        this.timerBar = this.scene.add.rectangle(GAME_WIDTH / 2, boxY - 55, GAME_WIDTH - UI_CONFIG.TIMER_BAR_WIDTH_OFFSET, UI_CONFIG.TIMER_BAR_HEIGHT, 0xd4af37);
         this.timerBar.setScrollFactor(0);
         this.timerBar.setDepth(1002);
         this.container.add(this.timerBar);
