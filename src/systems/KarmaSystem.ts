@@ -1,4 +1,5 @@
 import { BattleActionType } from '@/types/combat';
+import { KARMA_CONFIG } from '@/config/gameConfig';
 
 export type Ending = 'DAWN' | 'ETERNAL_NIGHT';
 
@@ -83,7 +84,7 @@ class KarmaSystemClass {
     }
 
     getEnding(): Ending {
-        return this.getKarmaScore() >= 2 ? 'DAWN' : 'ETERNAL_NIGHT';
+        return this.getKarmaScore() >= KARMA_CONFIG.thresholdGoodEnding ? 'DAWN' : 'ETERNAL_NIGHT';
     }
 
     getResistCount(): number {
