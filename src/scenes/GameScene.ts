@@ -337,10 +337,17 @@ export class GameScene extends BaseScene {
         }
 
         if (!nearTarget) {
-            this.currentLoreItems.forEach(item => {
+            this.currentLoreItems.forEach((item) => {
                 const loreX = item.x * TILE_SIZE * SCALE;
                 const loreY = item.y * TILE_SIZE * SCALE;
-                if (Phaser.Math.Distance.Between(this.player.getPosition().x, this.player.getPosition().y, loreX, loreY) < 60) {
+                if (
+                    Phaser.Math.Distance.Between(
+                        this.player.getPosition().x,
+                        this.player.getPosition().y,
+                        loreX,
+                        loreY,
+                    ) < 60
+                ) {
                     nearTarget = true;
                     this.interactionPrompt.setText(LOCALE.UI.INTERACTION_PROMPT).setVisible(true);
                     if (interactPressed) this.showLore(item);
@@ -494,19 +501,22 @@ export class GameScene extends BaseScene {
         this.player.freeze();
         this.interactionPrompt.setVisible(false);
 
-        const lines = item.description.map(text => ({ text }));
-        this.dialogManager.showDialogRaw({
-            id: item.id,
-            lines: lines
-        }, () => {
-            this.player.unfreeze();
-            SaveSystem.discoverLore(item.id);
-            if (item.isMemory) {
-                SaveSystem.collectMemory(item.id);
-                /* Add a visual/audio cue here later */
-                this.effectsManager.flash();
-                this.audioManager.playSFX('pickup'); // Assuming pickup exists
-            }
-        });
+        const lines = item.description.map((text) => ({ text }));
+        this.dialogManager.showDialogRaw(
+            {
+                id: item.id,
+                lines: lines,
+            },
+            () => {
+                this.player.unfreeze();
+                SaveSystem.discoverLore(item.id);
+                if (item.isMemory) {
+                    SaveSystem.collectMemory(item.id);
+                    /* Add a visual/audio cue here later */
+                    this.effectsManager.flash();
+                    this.audioManager.playSFX("pickup"); // Assuming pickup exists
+                }
+            },
+        );
     }
 }

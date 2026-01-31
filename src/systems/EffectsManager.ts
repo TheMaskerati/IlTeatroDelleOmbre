@@ -198,6 +198,11 @@ export class EffectsManager {
      * @param duration Flash duration
      */
     public flash(color: number = 0xffffff, duration: number = 200): void {
-        this.scene.cameras.main.flash(duration, (color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF);
+        this.scene.cameras.main.flash(
+            duration,
+            (color >> 16) & 0xff,
+            (color >> 8) & 0xff,
+            color & 0xff,
+        );
     }
 }
