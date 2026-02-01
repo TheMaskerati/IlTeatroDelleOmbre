@@ -16,6 +16,8 @@ export class PauseScene extends Phaser.Scene {
         const overlay = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.7);
         overlay.setOrigin(0);
 
+        const centerX = GAME_WIDTH / 2;
+        const centerY = GAME_HEIGHT / 2;
         const locale = DataManager.getInstance().locale.PAUSE;
 
         /* Titolo */

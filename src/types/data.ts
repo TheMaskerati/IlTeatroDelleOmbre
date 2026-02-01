@@ -16,6 +16,19 @@ export interface LocaleData {
     SETTINGS: Record<string, string>;
     CREDITS: Record<string, string>;
     ACHIEVEMENTS: Record<string, string>;
+    BATTLE: {
+        GENNARO: string;
+        HP: string;
+        TEMPTATION: string;
+        ACTIONS: Record<string, string>;
+        MESSAGES: Record<string, string>;
+    };
+    PAUSE: {
+        TITLE: string;
+        RESUME: string;
+        SETTINGS: string;
+        MENU: string;
+    };
     ITEMS: Record<string, { name: string; description: string }>;
 }
 
